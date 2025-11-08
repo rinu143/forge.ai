@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { analyzeProblem } from '../services/geminiService';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { analyzeProblem, chat, ChatMessage as GeminiChatMessage } from '../services/geminiService';
 import { UserDrivenResponse, AnalysisChunk, FounderProfile, Theme } from '../types';
 import { useConversation, Message } from '../contexts/ConversationContext';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -56,8 +56,32 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
   const [currentResponse, setCurrentResponse] = useState<UserDrivenResponse | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'visualizer'>('cards');
 
-  const { conversations } = useConversation();
+  const { currentConversation, conversations, addMessage, createNewConversation } = useConversation();
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const processedSignatureRef = useRef<string | null>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [currentConversation?.messages]);
+
+  const seedChatWithAnalysis = useCallback(async (problem: string, analysis: UserDrivenResponse) => {
+    await createNewConversation();
+    
+    await addMessage('user', problem);
+    
+    const analysisText = `# Analysis Complete\n\n## Problem Statement\n${problem}\n\n## Analysis Results\n\n${analysis.chunks.map(chunk => 
+      `### ${chunk.title}\n${chunk.analysis}\n\n**Key Insights:**\n${chunk.key_insights.map(insight => `- ${insight}`).join('\n')}`
+    ).join('\n\n')}\n\n## Solution Guide\n${analysis.synthesis.solution_guide.map((step, idx) => `${idx + 1}. ${step}`).join('\n')}`;
+    
+    await addMessage('assistant', analysisText);
+  }, [createNewConversation, addMessage]);
 
   React.useEffect(() => {
     if (initialProblem) {
@@ -77,6 +101,7 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
             const result = await analyzeProblem(initialProblem, profile);
             setCurrentResponse(result);
             setResponse(result);
+            await seedChatWithAnalysis(initialProblem, result);
             if (onProblemProcessed) {
               onProblemProcessed();
             }
@@ -89,7 +114,7 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
         autoAnalyze();
       }
     }
-  }, [initialProblem, profile, setResponse, onProblemProcessed]);
+  }, [initialProblem, profile, setResponse, onProblemProcessed, seedChatWithAnalysis]);
 
   const handleAnalyzeSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,12 +129,49 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
       const result = await analyzeProblem(userInput, profile);
       setCurrentResponse(result);
       setResponse(result);
+      await seedChatWithAnalysis(userInput, result);
     } catch (err: any) {
       setError(err.message || 'An unknown error occurred.');
     } finally {
       setIsLoading(false);
     }
-  }, [userInput, profile, setResponse]);
+  }, [userInput, profile, setResponse, seedChatWithAnalysis]);
+
+  const handleChatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || isChatLoading) return;
+
+    const userMessage = chatInput.trim();
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      await addMessage('user', userMessage);
+
+      const history: GeminiChatMessage[] = [
+        ...(currentConversation?.messages.map(msg => ({
+          role: msg.role === 'user' ? ('user' as const) : ('model' as const),
+          parts: msg.content
+        })) || []),
+        { role: 'user' as const, parts: userMessage }
+      ];
+
+      const response = await chat(userMessage, history);
+      await addMessage('assistant', response);
+    } catch (error: any) {
+      await addMessage('assistant', `Sorry, I encountered an error: ${error.message}`);
+    } finally {
+      setIsChatLoading(false);
+      chatInputRef.current?.focus();
+    }
+  };
+
+  const handleChatKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleChatSubmit(e);
+    }
+  };
 
 
   return (
@@ -234,6 +296,74 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
                         </li>
                     ))}
                  </ol>
+              </div>
+
+              <div className="mt-12 border-t border-gray-200 dark:border-white/10 pt-8">
+                <h3 className="text-2xl font-semibold text-black dark:text-white mb-2 flex items-center gap-2">
+                  <SparklesIcon className="w-6 h-6" />
+                  Refine Your Solution
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Ask follow-up questions to fine-tune the analysis and get more specific guidance
+                </p>
+
+                <div className="space-y-6">
+                  {currentConversation?.messages.slice(2).map((message: Message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                          message.role === 'user'
+                            ? 'bg-gray-900 dark:bg-white text-white dark:text-black'
+                            : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white'
+                        }`}
+                      >
+                        {message.role === 'assistant' ? (
+                          <div className="prose dark:prose-invert max-w-none">
+                            <MarkdownRenderer content={message.content} />
+                          </div>
+                        ) : (
+                          <p className="whitespace-pre-wrap">{message.content}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {isChatLoading && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-gray-100 dark:bg-white/10">
+                        <Loader />
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <form onSubmit={handleChatSubmit} className="mt-6">
+                  <div className="flex gap-2">
+                    <textarea
+                      ref={chatInputRef}
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={handleChatKeyDown}
+                      placeholder="Ask follow-up questions... (e.g., 'Can you elaborate on the MVP approach?' or 'What about technical challenges?')"
+                      rows={2}
+                      className="flex-1 resize-none px-4 py-3 bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 border-none"
+                      disabled={isChatLoading}
+                    />
+                    <button
+                      type="submit"
+                      disabled={isChatLoading || !chatInput.trim()}
+                      className="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-black font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                    >
+                      Send
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Press Enter to send, Shift+Enter for a new line
+                  </p>
+                </form>
               </div>
             </div>
           )}
