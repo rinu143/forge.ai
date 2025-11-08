@@ -72,17 +72,15 @@ export const ConversationProvider: React.FC<ConversationProviderProps> = ({ chil
       ? conversations.find(c => c.id === conversationId) || currentConversation
       : currentConversation;
       
-    if (!targetConversation) return;
+    if (!targetConversation) {
+      console.error('[ConversationContext] No target conversation found');
+      return;
+    }
 
     try {
-      // Always create messages locally for now
-      // TODO: Add proper auth token validation and database persistence
-      const newMessage: Message = {
-        id: `local-${Date.now()}-${Math.random()}`,
-        role,
-        content,
-        timestamp: Date.now(),
-      };
+      console.log('[ConversationContext] Adding message to conversation:', targetConversation.id);
+      const newMessage = await conversationAPI.addMessage(targetConversation.id, role, content);
+      console.log('[ConversationContext] Message added to database:', newMessage.id);
 
       const updatedTitle = targetConversation.messages.length === 0 && role === 'user' 
         ? content.slice(0, 50) + (content.length > 50 ? '...' : '')
@@ -98,10 +96,11 @@ export const ConversationProvider: React.FC<ConversationProviderProps> = ({ chil
       setConversations(prev =>
         prev.map(conv => (conv.id === updatedConversation.id ? updatedConversation : conv))
       );
+      console.log('[ConversationContext] State updated, total messages:', updatedConversation.messages.length);
     } catch (error) {
-      console.error('Failed to add message:', error);
+      console.error('[ConversationContext] Failed to add message:', error);
       throw error;
-      }
+    }
   };
 
   const switchConversation = (conversationId: string) => {
