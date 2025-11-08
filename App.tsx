@@ -74,9 +74,17 @@ const App: React.FC = () => {
     return (
       <div className={theme === 'dark' ? 'dark' : ''}>
         {authView === 'login' ? (
-          <LoginView onSwitchToRegister={() => setAuthView('register')} />
+          <LoginView 
+            onSwitchToRegister={() => setAuthView('register')} 
+            theme={theme}
+            onThemeChange={handleThemeChange}
+          />
         ) : (
-          <RegisterView onSwitchToLogin={() => setAuthView('login')} />
+          <RegisterView 
+            onSwitchToLogin={() => setAuthView('login')}
+            theme={theme}
+            onThemeChange={handleThemeChange}
+          />
         )}
       </div>
     );
