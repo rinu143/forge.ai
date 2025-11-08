@@ -14,10 +14,13 @@ Forge AI is a personalized AI co-pilot for startup founders and innovators. It u
 
 ### Key Features
 1. **Authentication**: User registration and login with secure session management
-2. **Analyze**: Structured problem analysis with two tabs:
+2. **Analyze**: Structured problem analysis with contextual chat refinement:
    - Analyze tab: Deep problem analysis with founder profile customization
+   - After analysis completes, a "Refine Your Solution" chat interface appears below results
+   - Users can ask follow-up questions to fine-tune the analysis (ChatGPT-like experience)
+   - AI maintains full conversation memory and analysis context
    - History tab: Browse past analysis conversations
-   - Analysis results stored in PostgreSQL database
+   - All conversations stored in PostgreSQL database
 3. **Discover**: Proactive opportunity scanner that finds emerging problems in specified sectors
 4. **Compose**: AI-powered strategy synthesis that creates actionable plans
 
@@ -84,6 +87,14 @@ Backend API runs on port 3001, frontend on port 5000.
   - History tab: Browse all past analysis conversations
   - Set Analyze as default view on login
   - Analysis history stored in PostgreSQL database
+- Implemented contextual chat for solution refinement:
+  - Chat interface appears below analysis results after analysis completes
+  - "Refine Your Solution" section enables follow-up questions
+  - Conversation is seeded with complete analysis context (problem, chunks, insights, solution guide)
+  - AI responds with full memory of the analysis and conversation history
+  - Users can iteratively refine and explore the solution like ChatGPT
+  - All refinement conversations persist in PostgreSQL
+  - Only follow-up messages displayed (initial seeding hidden for clean UX)
 
 ## Running the Project
 The project runs automatically via the configured workflow using `npm run dev`. The application is accessible through the Replit webview on port 5000.
