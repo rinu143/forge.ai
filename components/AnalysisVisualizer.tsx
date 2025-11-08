@@ -38,7 +38,7 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
               fontSize: '11px', 
               textTransform: 'uppercase', 
               letterSpacing: '0.05em',
-              color: theme === 'dark' ? '#9ca3af' : '#6b7280',
+              color: theme === 'dark' ? '#9ca3af' : '#000000',
               marginBottom: '8px'
             }}>
               Problem Statement
@@ -47,7 +47,7 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
               fontSize: '14px', 
               fontWeight: '500', 
               lineHeight: '1.4',
-              color: theme === 'dark' ? '#e5e5e5' : '#1a1a1a'
+              color: theme === 'dark' ? '#e5e5e5' : '#000000'
             }}>
               {response.refined_problem.substring(0, 120)}...
             </div>
@@ -81,13 +81,13 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
                 fontWeight: 'bold', 
                 fontSize: '14px', 
                 marginBottom: '8px',
-                color: theme === 'dark' ? '#60a5fa' : '#2563eb'
+                color: theme === 'dark' ? '#60a5fa' : '#000000'
               }}>
                 {chunk.title}
               </div>
               <div style={{ 
                 fontSize: '12px', 
-                color: theme === 'dark' ? '#9ca3af' : '#4b5563',
+                color: theme === 'dark' ? '#9ca3af' : '#000000',
                 marginBottom: '8px',
                 display: '-webkit-box',
                 WebkitLineClamp: 3,
@@ -99,7 +99,7 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
               <div style={{ 
                 fontSize: '12px', 
                 fontWeight: '500',
-                color: theme === 'dark' ? '#6b7280' : '#6b7280',
+                color: theme === 'dark' ? '#6b7280' : '#000000',
                 marginTop: '8px',
                 paddingTop: '8px',
                 borderTop: `1px solid ${theme === 'dark' ? '#374151' : '#e5e7eb'}`
@@ -135,7 +135,7 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
                 <div style={{ 
                   fontSize: '11px', 
                   lineHeight: '1.4',
-                  color: theme === 'dark' ? '#d1d5db' : '#4b5563'
+                  color: theme === 'dark' ? '#d1d5db' : '#000000'
                 }}>
                   {insight.substring(0, 70)}...
                 </div>
@@ -169,14 +169,14 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
               textTransform: 'uppercase', 
               letterSpacing: '0.05em',
               marginBottom: '8px',
-              color: theme === 'dark' ? '#86efac' : '#166534'
+              color: theme === 'dark' ? '#86efac' : '#000000'
             }}>
               Solution Guide
             </div>
             <div style={{ 
               fontSize: '14px', 
               fontWeight: '500',
-              color: theme === 'dark' ? '#86efac' : '#166534'
+              color: theme === 'dark' ? '#86efac' : '#000000'
             }}>
               {response.synthesis.solution_guide.length} MVP Steps
             </div>
@@ -270,9 +270,28 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
       }}
     >
       <style>{`
+        /* Canvas Background */
         .react-flow__pane {
           background: ${theme === 'dark' ? '#0a0a0a' : '#ffffff'} !important;
         }
+        
+        /* Viewport/Canvas Wrapper */
+        .react-flow__viewport {
+          background: ${theme === 'dark' ? '#0a0a0a' : '#ffffff'} !important;
+        }
+        
+        /* Node Styling */
+        .react-flow__node {
+          background: ${theme === 'dark' ? '#1a1a1a' : '#ffffff'} !important;
+          color: ${theme === 'dark' ? '#e5e5e5' : '#1a1a1a'} !important;
+        }
+        
+        /* Edge Styling */
+        .react-flow__edge-path {
+          stroke: ${theme === 'dark' ? '#4a4a4a' : '#9ca3af'} !important;
+        }
+        
+        /* Controls */
         .react-flow__controls {
           background: ${theme === 'dark' ? '#1a1a1a' : '#ffffff'} !important;
           border: 1px solid ${theme === 'dark' ? '#4a4a4a' : '#d1d5db'} !important;
@@ -281,15 +300,24 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
         }
         .react-flow__controls button {
           background: ${theme === 'dark' ? '#2a2a2a' : '#ffffff'} !important;
-          border: 1px solid ${theme === 'dark' ? '#4a4a4a' : '#d1d5db'} !important;
+          border-bottom: 1px solid ${theme === 'dark' ? '#4a4a4a' : '#d1d5db'} !important;
           color: ${theme === 'dark' ? '#e5e5e5' : '#374151'} !important;
+          transition: background 0.2s ease !important;
         }
         .react-flow__controls button:hover {
           background: ${theme === 'dark' ? '#3a3a3a' : '#f3f4f6'} !important;
         }
+        .react-flow__controls button:last-child {
+          border-bottom: none !important;
+        }
         .react-flow__controls button path {
           fill: ${theme === 'dark' ? '#e5e5e5' : '#374151'} !important;
         }
+        .react-flow__controls button svg {
+          fill: ${theme === 'dark' ? '#e5e5e5' : '#374151'} !important;
+        }
+        
+        /* MiniMap */
         .react-flow__minimap {
           background: ${theme === 'dark' ? '#1a1a1a' : '#ffffff'} !important;
           border: 1px solid ${theme === 'dark' ? '#4a4a4a' : '#d1d5db'} !important;
@@ -303,8 +331,31 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
           fill: ${theme === 'dark' ? '#2a2a2a' : '#f9fafb'} !important;
           stroke: ${theme === 'dark' ? '#4a4a4a' : '#d1d5db'} !important;
         }
+        
+        /* Selection Box */
+        .react-flow__selection {
+          background: ${theme === 'dark' ? 'rgba(96, 165, 250, 0.1)' : 'rgba(37, 99, 235, 0.1)'} !important;
+          border: 1px solid ${theme === 'dark' ? '#60a5fa' : '#2563eb'} !important;
+        }
+        
+        /* Node Selection */
+        .react-flow__node.selected {
+          box-shadow: ${theme === 'dark' ? '0 0 0 2px #60a5fa' : '0 0 0 2px #2563eb'} !important;
+        }
+        
+        /* Edge Selection */
+        .react-flow__edge.selected .react-flow__edge-path {
+          stroke: ${theme === 'dark' ? '#60a5fa' : '#2563eb'} !important;
+        }
+        
+        /* Hide Attribution */
         .react-flow__attribution {
           display: none !important;
+        }
+        
+        /* Background Pattern */
+        .react-flow__background {
+          background-color: ${theme === 'dark' ? '#0a0a0a' : '#ffffff'} !important;
         }
       `}</style>
       <ReactFlow

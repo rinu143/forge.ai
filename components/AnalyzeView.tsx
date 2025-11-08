@@ -141,19 +141,19 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
 
       {currentResponse && (
         <div className="mt-12 max-w-6xl mx-auto animate-slide-up">
-          <div className="bg-gray-50 dark:bg-[#1a1a1a]/80 border border-gray-200 dark:border-white/10 p-6 rounded-xl mb-8">
-            <div className="flex justify-between items-start">
+          <div className="bg-gray-50 dark:bg-[#1a1a1a]/80 border border-gray-200 dark:border-white/10 p-4 sm:p-6 rounded-xl mb-8">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase">Original Problem</h3>
-                <p className="text-black dark:text-gray-200 italic mt-1">"{currentResponse.input_problem}"</p>
+                <h3 className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase">Original Problem</h3>
+                <p className="text-black dark:text-gray-200 italic mt-1 text-sm sm:text-base">"{currentResponse.input_problem}"</p>
                 <hr className="my-4 border-gray-200 dark:border-white/10" />
-                <h3 className="text-sm font-semibold text-black dark:text-white tracking-wider uppercase">Refined & Personalized Problem</h3>
-                <p className="text-black dark:text-white font-medium text-xl mt-1">{currentResponse.refined_problem}</p>
+                <h3 className="text-xs sm:text-sm font-semibold text-black dark:text-white tracking-wider uppercase">Refined & Personalized Problem</h3>
+                <p className="text-black dark:text-white font-medium text-base sm:text-lg lg:text-xl mt-1">{currentResponse.refined_problem}</p>
               </div>
-              <div className="ml-4 flex gap-2">
+              <div className="flex gap-2 lg:ml-4 shrink-0">
                 <button
                   onClick={() => setViewMode('cards')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`flex-1 lg:flex-none px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     viewMode === 'cards'
                       ? 'bg-black dark:bg-white text-white dark:text-black'
                       : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
@@ -163,7 +163,7 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
                 </button>
                 <button
                   onClick={() => setViewMode('visualizer')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`flex-1 lg:flex-none px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     viewMode === 'visualizer'
                       ? 'bg-black dark:bg-white text-white dark:text-black'
                       : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
