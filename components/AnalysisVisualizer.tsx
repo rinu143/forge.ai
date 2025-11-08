@@ -32,19 +32,36 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
       type: 'input',
       data: { 
         label: (
-          <div className="p-2">
-            <div className="font-bold text-sm mb-1">Problem</div>
-            <div className="text-xs">{response.refined_problem.substring(0, 100)}...</div>
+          <div style={{ padding: '16px' }}>
+            <div style={{ 
+              fontWeight: 'bold', 
+              fontSize: '11px', 
+              textTransform: 'uppercase', 
+              letterSpacing: '0.05em',
+              color: theme === 'dark' ? '#9ca3af' : '#6b7280',
+              marginBottom: '8px'
+            }}>
+              Problem Statement
+            </div>
+            <div style={{ 
+              fontSize: '14px', 
+              fontWeight: '500', 
+              lineHeight: '1.4',
+              color: theme === 'dark' ? '#e5e5e5' : '#1a1a1a'
+            }}>
+              {response.refined_problem.substring(0, 120)}...
+            </div>
           </div>
         )
       },
       position: { x: 400, y: 50 },
       style: {
-        background: theme === 'dark' ? '#1a1a1a' : '#f9fafb',
-        color: theme === 'dark' ? '#fff' : '#000',
-        border: `2px solid ${theme === 'dark' ? '#666' : '#999'}`,
+        background: theme === 'dark' ? '#1a1a1a' : '#ffffff',
+        color: theme === 'dark' ? '#e5e5e5' : '#1a1a1a',
+        border: `2px solid ${theme === 'dark' ? '#4a4a4a' : '#9ca3af'}`,
         borderRadius: '12px',
-        width: 300,
+        width: 320,
+        boxShadow: theme === 'dark' ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)',
       },
     });
 
@@ -59,22 +76,47 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
         id: `chunk-${chunk.id}`,
         data: { 
           label: (
-            <div className="p-3">
-              <div className="font-bold text-sm mb-2">{chunk.title}</div>
-              <div className="text-xs mb-2">{chunk.analysis.substring(0, 80)}...</div>
-              <div className="text-xs font-semibold text-blue-500 dark:text-blue-400">
-                {chunk.key_insights.length} insights
+            <div style={{ padding: '12px' }}>
+              <div style={{ 
+                fontWeight: 'bold', 
+                fontSize: '14px', 
+                marginBottom: '8px',
+                color: theme === 'dark' ? '#60a5fa' : '#2563eb'
+              }}>
+                {chunk.title}
+              </div>
+              <div style={{ 
+                fontSize: '12px', 
+                color: theme === 'dark' ? '#9ca3af' : '#4b5563',
+                marginBottom: '8px',
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden'
+              }}>
+                {chunk.analysis.substring(0, 90)}...
+              </div>
+              <div style={{ 
+                fontSize: '12px', 
+                fontWeight: '500',
+                color: theme === 'dark' ? '#6b7280' : '#6b7280',
+                marginTop: '8px',
+                paddingTop: '8px',
+                borderTop: `1px solid ${theme === 'dark' ? '#374151' : '#e5e7eb'}`
+              }}>
+                {chunk.key_insights.length} key insights
               </div>
             </div>
           )
         },
         position: { x, y },
         style: {
-          background: theme === 'dark' ? '#2a2a2a' : '#fff',
+          background: theme === 'dark' ? '#1e1e1e' : '#ffffff',
           color: theme === 'dark' ? '#e5e5e5' : '#1a1a1a',
-          border: `2px solid ${theme === 'dark' ? '#4a4a4a' : '#d1d5db'}`,
+          border: `2px solid ${theme === 'dark' ? '#3a3a3a' : '#e5e7eb'}`,
           borderRadius: '12px',
-          width: 250,
+          width: 260,
+          boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.05)',
         },
       });
 
@@ -89,19 +131,26 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
           id: `insight-${chunk.id}-${insightIndex}`,
           data: { 
             label: (
-              <div className="p-2">
-                <div className="text-xs">{insight.substring(0, 60)}...</div>
+              <div style={{ padding: '8px' }}>
+                <div style={{ 
+                  fontSize: '11px', 
+                  lineHeight: '1.4',
+                  color: theme === 'dark' ? '#d1d5db' : '#4b5563'
+                }}>
+                  {insight.substring(0, 70)}...
+                </div>
               </div>
             )
           },
           position: { x: childX, y: childY },
           style: {
-            background: theme === 'dark' ? '#3a3a3a' : '#f3f4f6',
-            color: theme === 'dark' ? '#d1d5db' : '#374151',
-            border: `1px solid ${theme === 'dark' ? '#555' : '#9ca3af'}`,
+            background: theme === 'dark' ? '#2a2a2a' : '#f9fafb',
+            color: theme === 'dark' ? '#d1d5db' : '#4b5563',
+            border: `1px solid ${theme === 'dark' ? '#4a4a4a' : '#d1d5db'}`,
             borderRadius: '8px',
-            width: 180,
+            width: 190,
             fontSize: '11px',
+            boxShadow: theme === 'dark' ? '0 1px 4px rgba(0,0,0,0.2)' : '0 1px 4px rgba(0,0,0,0.05)',
           },
         });
       });
@@ -113,19 +162,35 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
       type: 'output',
       data: { 
         label: (
-          <div className="p-3">
-            <div className="font-bold text-sm mb-2">Solution Guide</div>
-            <div className="text-xs">{response.synthesis.solution_guide.length} steps</div>
+          <div style={{ padding: '16px' }}>
+            <div style={{ 
+              fontWeight: 'bold', 
+              fontSize: '11px', 
+              textTransform: 'uppercase', 
+              letterSpacing: '0.05em',
+              marginBottom: '8px',
+              color: theme === 'dark' ? '#86efac' : '#166534'
+            }}>
+              Solution Guide
+            </div>
+            <div style={{ 
+              fontSize: '14px', 
+              fontWeight: '500',
+              color: theme === 'dark' ? '#86efac' : '#166534'
+            }}>
+              {response.synthesis.solution_guide.length} MVP Steps
+            </div>
           </div>
         )
       },
       position: { x: 450, y: 700 },
       style: {
-        background: theme === 'dark' ? '#1e3a1e' : '#dcfce7',
+        background: theme === 'dark' ? '#1a2e1a' : '#dcfce7',
         color: theme === 'dark' ? '#86efac' : '#166534',
-        border: `2px solid ${theme === 'dark' ? '#15803d' : '#22c55e'}`,
+        border: `2px solid ${theme === 'dark' ? '#22c55e' : '#16a34a'}`,
         borderRadius: '12px',
-        width: 200,
+        width: 220,
+        boxShadow: theme === 'dark' ? '0 4px 12px rgba(34, 197, 94, 0.2)' : '0 4px 12px rgba(22, 163, 74, 0.2)',
       },
     });
 
@@ -142,10 +207,13 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
         source: 'problem',
         target: `chunk-${chunk.id}`,
         animated: true,
-        style: { stroke: theme === 'dark' ? '#666' : '#999' },
+        style: { 
+          stroke: theme === 'dark' ? '#4a4a4a' : '#9ca3af',
+          strokeWidth: 2,
+        },
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: theme === 'dark' ? '#666' : '#999',
+          color: theme === 'dark' ? '#4a4a4a' : '#9ca3af',
         },
       });
 
@@ -155,10 +223,13 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
           id: `chunk-${chunk.id}-insight-${insightIndex}`,
           source: `chunk-${chunk.id}`,
           target: `insight-${chunk.id}-${insightIndex}`,
-          style: { stroke: theme === 'dark' ? '#4a4a4a' : '#d1d5db' },
+          style: { 
+            stroke: theme === 'dark' ? '#3a3a3a' : '#e5e7eb',
+            strokeWidth: 1.5,
+          },
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: theme === 'dark' ? '#4a4a4a' : '#d1d5db',
+            color: theme === 'dark' ? '#3a3a3a' : '#e5e7eb',
           },
         });
       });
@@ -169,10 +240,13 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
         source: `chunk-${chunk.id}`,
         target: 'solution',
         animated: true,
-        style: { stroke: theme === 'dark' ? '#15803d' : '#22c55e' },
+        style: { 
+          stroke: theme === 'dark' ? '#22c55e' : '#16a34a',
+          strokeWidth: 2,
+        },
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: theme === 'dark' ? '#15803d' : '#22c55e',
+          color: theme === 'dark' ? '#22c55e' : '#16a34a',
         },
       });
     });
@@ -189,7 +263,50 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
   );
 
   return (
-    <div className="w-full h-[600px] rounded-xl overflow-hidden border-2 border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a]">
+    <div 
+      className="w-full h-[700px] rounded-xl overflow-hidden border border-gray-300 dark:border-white/20 shadow-lg"
+      style={{ 
+        background: theme === 'dark' ? '#0a0a0a' : '#ffffff' 
+      }}
+    >
+      <style>{`
+        .react-flow__pane {
+          background: ${theme === 'dark' ? '#0a0a0a' : '#ffffff'} !important;
+        }
+        .react-flow__controls {
+          background: ${theme === 'dark' ? '#1a1a1a' : '#ffffff'} !important;
+          border: 1px solid ${theme === 'dark' ? '#4a4a4a' : '#d1d5db'} !important;
+          border-radius: 8px !important;
+          box-shadow: ${theme === 'dark' ? '0 4px 6px rgba(0,0,0,0.3)' : '0 4px 6px rgba(0,0,0,0.1)'} !important;
+        }
+        .react-flow__controls button {
+          background: ${theme === 'dark' ? '#2a2a2a' : '#ffffff'} !important;
+          border: 1px solid ${theme === 'dark' ? '#4a4a4a' : '#d1d5db'} !important;
+          color: ${theme === 'dark' ? '#e5e5e5' : '#374151'} !important;
+        }
+        .react-flow__controls button:hover {
+          background: ${theme === 'dark' ? '#3a3a3a' : '#f3f4f6'} !important;
+        }
+        .react-flow__controls button path {
+          fill: ${theme === 'dark' ? '#e5e5e5' : '#374151'} !important;
+        }
+        .react-flow__minimap {
+          background: ${theme === 'dark' ? '#1a1a1a' : '#ffffff'} !important;
+          border: 1px solid ${theme === 'dark' ? '#4a4a4a' : '#d1d5db'} !important;
+          border-radius: 8px !important;
+          box-shadow: ${theme === 'dark' ? '0 4px 6px rgba(0,0,0,0.3)' : '0 4px 6px rgba(0,0,0,0.1)'} !important;
+        }
+        .react-flow__minimap-mask {
+          fill: ${theme === 'dark' ? 'rgba(26, 26, 26, 0.6)' : 'rgba(255, 255, 255, 0.6)'} !important;
+        }
+        .react-flow__minimap-node {
+          fill: ${theme === 'dark' ? '#2a2a2a' : '#f9fafb'} !important;
+          stroke: ${theme === 'dark' ? '#4a4a4a' : '#d1d5db'} !important;
+        }
+        .react-flow__attribution {
+          display: none !important;
+        }
+      `}</style>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -197,18 +314,43 @@ const AnalysisVisualizer: React.FC<AnalysisVisualizerProps> = ({ response, theme
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         fitView
+        fitViewOptions={{
+          padding: 0.2,
+          minZoom: 0.5,
+          maxZoom: 1.5,
+        }}
+        minZoom={0.3}
+        maxZoom={2}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
         attributionPosition="bottom-left"
+        panOnScroll
+        zoomOnScroll
+        zoomOnPinch
+        panOnDrag
       >
-        <Controls className={theme === 'dark' ? 'react-flow__controls-dark' : ''} />
+        <Controls 
+          showZoom
+          showFitView
+          showInteractive
+          position="bottom-right"
+        />
         <MiniMap 
-          nodeColor={theme === 'dark' ? '#2a2a2a' : '#f9fafb'}
-          maskColor={theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)'}
+          nodeColor={(node) => {
+            if (node.id === 'problem') return theme === 'dark' ? '#1a1a1a' : '#f9fafb';
+            if (node.id === 'solution') return theme === 'dark' ? '#1a2e1a' : '#dcfce7';
+            if (node.id.startsWith('chunk-')) return theme === 'dark' ? '#1e1e1e' : '#ffffff';
+            return theme === 'dark' ? '#2a2a2a' : '#f3f4f6';
+          }}
+          maskColor={theme === 'dark' ? 'rgba(10, 10, 10, 0.8)' : 'rgba(249, 250, 251, 0.8)'}
+          position="bottom-left"
+          zoomable
+          pannable
         />
         <Background 
           variant={BackgroundVariant.Dots} 
-          gap={12} 
+          gap={16} 
           size={1}
-          color={theme === 'dark' ? '#333' : '#ddd'}
+          color={theme === 'dark' ? '#333' : '#e5e7eb'}
         />
       </ReactFlow>
     </div>
