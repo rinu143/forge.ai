@@ -1,8 +1,7 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { analyzeProblem } from '../services/geminiService';
 import { UserDrivenResponse, AnalysisChunk, FounderProfile, Theme } from '../types';
 import { useConversation, Message } from '../contexts/ConversationContext';
-import { chat, ChatMessage as GeminiChatMessage } from '../services/geminiService';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { Loader } from './Loader';
 import { LightbulbIcon } from './icons/LightbulbIcon';
@@ -50,42 +49,15 @@ const AnalysisChunkCard: React.FC<{ chunk: AnalysisChunk }> = ({ chunk }) => {
 };
 
 const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, onProblemProcessed, profile, setProfile, theme }) => {
-  const [activeTab, setActiveTab] = useState<'analyze' | 'chat' | 'history'>('analyze');
+  const [activeTab, setActiveTab] = useState<'analyze' | 'history'>('analyze');
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentResponse, setCurrentResponse] = useState<UserDrivenResponse | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'visualizer'>('cards');
 
-  const { currentConversation, conversations, addMessage, clearCurrentConversation, createNewConversation, switchConversation } = useConversation();
-  const [chatInput, setChatInput] = useState('');
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const chatInputRef = useRef<HTMLTextAreaElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [currentConversation?.messages]);
-
+  const { conversations } = useConversation();
   const processedSignatureRef = useRef<string | null>(null);
-
-  const seedChatWithAnalysis = useCallback(async (problem: string, analysis: UserDrivenResponse) => {
-    await createNewConversation();
-    
-    await addMessage('user', problem);
-    
-    const analysisText = `# Analysis Complete\n\n## Problem Statement\n${problem}\n\n## Analysis Results\n\n${analysis.chunks.map(chunk => 
-      `### ${chunk.title}\n${chunk.analysis}\n\n**Key Insights:**\n${chunk.key_insights.map(insight => `- ${insight}`).join('\n')}`
-    ).join('\n\n')}`;
-    
-    await addMessage('assistant', analysisText);
-    
-    setActiveTab('chat');
-  }, [createNewConversation, addMessage]);
 
   React.useEffect(() => {
     if (initialProblem) {
@@ -108,7 +80,6 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
             if (onProblemProcessed) {
               onProblemProcessed();
             }
-            await seedChatWithAnalysis(initialProblem, result);
           } catch (err: any) {
             setError(err.message || 'An unknown error occurred.');
           } finally {
@@ -118,7 +89,7 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
         autoAnalyze();
       }
     }
-  }, [initialProblem, profile, setResponse, onProblemProcessed, seedChatWithAnalysis]);
+  }, [initialProblem, profile, setResponse, onProblemProcessed]);
 
   const handleAnalyzeSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,54 +104,13 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
       const result = await analyzeProblem(userInput, profile);
       setCurrentResponse(result);
       setResponse(result);
-      await seedChatWithAnalysis(userInput, result);
     } catch (err: any) {
       setError(err.message || 'An unknown error occurred.');
     } finally {
       setIsLoading(false);
     }
-  }, [userInput, profile, setResponse, seedChatWithAnalysis]);
+  }, [userInput, profile, setResponse]);
 
-  const handleChatSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim() || isChatLoading) return;
-
-    const userMessage = chatInput.trim();
-    setChatInput('');
-    setIsChatLoading(true);
-
-    try {
-      await addMessage('user', userMessage);
-
-      const history: GeminiChatMessage[] = [
-        ...(currentConversation?.messages.map(msg => ({
-          role: msg.role === 'user' ? ('user' as const) : ('model' as const),
-          parts: msg.content
-        })) || []),
-        { role: 'user' as const, parts: userMessage }
-      ];
-
-      const response = await chat(userMessage, history);
-      await addMessage('assistant', response);
-    } catch (error: any) {
-      await addMessage('assistant', `Sorry, I encountered an error: ${error.message}`);
-    } finally {
-      setIsChatLoading(false);
-      chatInputRef.current?.focus();
-    }
-  };
-
-  const handleChatKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleChatSubmit(e);
-    }
-  };
-
-  const handleConversationClick = (conversationId: string) => {
-    switchConversation(conversationId);
-    setActiveTab('chat');
-  };
 
   return (
     <div className="flex flex-col h-full animate-fade-in">
@@ -189,7 +119,7 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
           <span className="gemini-gradient-text">Forge AI</span> Analysis
         </h1>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          Analyze problems, chat with AI, and explore conversation history
+          Analyze problems and view conversation history
         </p>
       </div>
 
@@ -205,16 +135,6 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
           Analyze
         </button>
         <button
-          onClick={() => setActiveTab('chat')}
-          className={`px-4 py-2 text-sm font-medium transition-all duration-200 border-b-2 ${
-            activeTab === 'chat'
-              ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white'
-              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
-        >
-          Chat
-        </button>
-        <button
           onClick={() => setActiveTab('history')}
           className={`px-4 py-2 text-sm font-medium transition-all duration-200 border-b-2 ${
             activeTab === 'history'
@@ -226,7 +146,7 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
         </button>
       </div>
 
-      {activeTab === 'analyze' ? (
+      {activeTab === 'analyze' && (
         <div className="flex-1 overflow-y-auto">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-black dark:text-white px-4">Problem Analysis Engine</h2>
           <p className="text-center text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-2 max-w-2xl mx-auto px-4">Get a deep, structured analysis tailored to your specific founder profile and constraints.</p>
@@ -318,150 +238,34 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
             </div>
           )}
         </div>
-      ) : activeTab === 'chat' ? (
-        <div className="flex flex-col flex-1 min-h-0">
-          <div className="flex items-center justify-end mb-4 gap-2">
-            <button
-              onClick={clearCurrentConversation}
-              className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 rounded-lg transition-all duration-200"
-              title="Clear current conversation"
-            >
-              Clear
-            </button>
-            <button
-              onClick={createNewConversation}
-              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 rounded-lg transition-all duration-200"
-              title="Start new conversation"
-            >
-              New Chat
-            </button>
-          </div>
+      )}
 
-          <div className="flex-1 overflow-y-auto mb-6 space-y-6 min-h-0">
-            {currentConversation?.messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                <SparklesIcon className="w-16 h-16 text-gray-400 dark:text-gray-600 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Start a conversation
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 max-w-md">
-                  Ask me anything about your startup, technology stack, market analysis, or get strategic advice. I'll remember our entire conversation!
-                </p>
-                <div className="mt-6 grid grid-cols-1 gap-3 w-full max-w-2xl">
-                  {[
-                    "How can I validate my startup idea?",
-                    "What's the best tech stack for an MVP?",
-                    "Help me understand my target market",
-                  ].map((suggestion, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setChatInput(suggestion)}
-                      className="text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 rounded-lg transition-all duration-200"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <>
-                {currentConversation?.messages.map((message: Message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                        message.role === 'user'
-                          ? 'bg-gray-900 dark:bg-white text-white dark:text-black'
-                          : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white'
-                      }`}
-                    >
-                      {message.role === 'assistant' ? (
-                        <div className="prose dark:prose-invert max-w-none">
-                          <MarkdownRenderer content={message.content} />
-                        </div>
-                      ) : (
-                        <p className="whitespace-pre-wrap">{message.content}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {isChatLoading && (
-                  <div className="flex justify-start">
-                    <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-gray-100 dark:bg-white/10">
-                      <Loader />
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </>
-            )}
-          </div>
-
-          <form onSubmit={handleChatSubmit} className="border-t border-gray-200 dark:border-white/10 pt-4">
-            <div className="flex gap-2">
-              <textarea
-                ref={chatInputRef}
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={handleChatKeyDown}
-                placeholder="Ask a question or discuss your startup... (Shift+Enter for new line)"
-                rows={1}
-                className="flex-1 resize-none px-4 py-3 bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 border-none"
-                disabled={isChatLoading}
-              />
-              <button
-                type="submit"
-                disabled={isChatLoading || !chatInput.trim()}
-                className="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-black font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              >
-                Send
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              Press Enter to send, Shift+Enter for a new line
-            </p>
-          </form>
-        </div>
-      ) : (
+      {activeTab === 'history' && (
         <div className="flex-1 overflow-y-auto">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Conversation History</h3>
           {conversations.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-600 dark:text-gray-400">No conversations yet. Start chatting to create your first conversation!</p>
+              <p className="text-gray-600 dark:text-gray-400">No analysis history yet. Start analyzing problems to build your history!</p>
             </div>
           ) : (
             <div className="space-y-3">
               {conversations.map((conv) => (
-                <button
+                <div
                   key={conv.id}
-                  onClick={() => handleConversationClick(conv.id)}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
-                    currentConversation?.id === conv.id
-                      ? 'bg-gray-900 dark:bg-white text-white dark:text-black'
-                      : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-white/20'
-                  }`}
+                  className="w-full text-left px-4 py-3 rounded-lg bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">
-                        {conv.messages[0]?.content.substring(0, 60) || 'New Conversation'}
+                        {conv.messages[0]?.content.substring(0, 60) || 'Analysis'}
                         {conv.messages[0]?.content.length > 60 ? '...' : ''}
                       </p>
-                      <p className={`text-xs mt-1 ${
-                        currentConversation?.id === conv.id
-                          ? 'text-white/70 dark:text-black/70'
-                          : 'text-gray-500 dark:text-gray-400'
-                      }`}>
+                      <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">
                         {conv.messages.length} message{conv.messages.length !== 1 ? 's' : ''} • {new Date(conv.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    {currentConversation?.id === conv.id && (
-                      <span className="text-xs px-2 py-1 rounded bg-white/20 dark:bg-black/20">Active</span>
-                    )}
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           )}
