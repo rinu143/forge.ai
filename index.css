@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-dark: #000000;
+  --bg-light: #ffffff;
+  --surface-dark: #1a1a1a;
+  --surface-light: #f5f5f5;
+  --primary-brand: #999999;
+  --primary-glow: rgba(153, 153, 153, 0.2);
+  --gradient-start: #666666;
+  --gradient-end: #333333;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+.gemini-gradient-text {
+  background: linear-gradient(90deg, #555, #000);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark .gemini-gradient-text {
+  background: linear-gradient(90deg, #ccc, #fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gemini-glow-button {
+  box-shadow: 0 0 15px 0 var(--primary-glow);
+}
+
+.gemini-glow-button:hover {
+  box-shadow: 0 0 25px 0 var(--primary-glow);
+}
+
+.gemini-glow-input:focus-within {
+  border-color: var(--primary-brand);
+  box-shadow: 0 0 10px 0 var(--primary-glow);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out;
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s ease-out;
+}
+
+/* Grid pattern */
+.bg-grid-white\/\[0\.05\] {
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.bg-grid-black\/\[0\.05\] {
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
