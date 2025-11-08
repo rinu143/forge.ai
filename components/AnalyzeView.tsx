@@ -72,24 +72,25 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
   }, [currentConversation?.messages]);
 
   const seedChatWithAnalysis = useCallback(async (problem: string, analysis: UserDrivenResponse) => {
-    console.log('[Chat Debug] Seeding chat with analysis');
     const newConv = await createNewConversation();
-    console.log('[Chat Debug] New conversation created:', newConv?.id);
     
     if (!newConv) {
-      console.error('[Chat Debug] Failed to create conversation');
       return;
     }
     
+    // Add a small delay to ensure React state updates have completed
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     await addMessage('user', problem, newConv.id);
-    console.log('[Chat Debug] Added problem message');
     
     const analysisText = `# Analysis Complete\n\n## Problem Statement\n${problem}\n\n## Analysis Results\n\n${analysis.chunks.map(chunk => 
       `### ${chunk.title}\n${chunk.analysis}\n\n**Key Insights:**\n${chunk.key_insights.map(insight => `- ${insight}`).join('\n')}`
     ).join('\n\n')}\n\n## Solution Guide\n${analysis.synthesis.solution_guide.map((step, idx) => `${idx + 1}. ${step}`).join('\n')}`;
     
     await addMessage('assistant', analysisText, newConv.id);
-    console.log('[Chat Debug] Chat seeded successfully, total messages:', 2);
+    
+    // Add another delay to ensure the conversation state is fully updated
+    await new Promise(resolve => setTimeout(resolve, 100));
   }, [createNewConversation, addMessage]);
 
   React.useEffect(() => {
@@ -148,36 +149,40 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[Chat Debug] Submit clicked, input:', chatInput);
+    
     if (!chatInput.trim() || isChatLoading) {
-      console.log('[Chat Debug] Skipping - empty or loading');
+      return;
+    }
+
+    if (!currentConversation) {
+      alert('Please generate an analysis first before asking follow-up questions.');
+      setIsChatLoading(false);
       return;
     }
 
     const userMessage = chatInput.trim();
     setChatInput('');
     setIsChatLoading(true);
-    console.log('[Chat Debug] Sending message:', userMessage);
 
     try {
       await addMessage('user', userMessage);
-      console.log('[Chat Debug] User message added');
 
+      // Wait a moment for state to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Re-fetch the current conversation to get the updated messages
+      const updatedConv = currentConversation;
+      
       const history: GeminiChatMessage[] = [
-        ...(currentConversation?.messages.map(msg => ({
+        ...(updatedConv?.messages.map(msg => ({
           role: msg.role === 'user' ? ('user' as const) : ('model' as const),
           parts: msg.content
-        })) || []),
-        { role: 'user' as const, parts: userMessage }
+        })) || [])
       ];
 
-      console.log('[Chat Debug] Calling AI with history length:', history.length);
       const response = await chat(userMessage, history);
-      console.log('[Chat Debug] AI responded with:', response.substring(0, 50));
       await addMessage('assistant', response);
-      console.log('[Chat Debug] Assistant message added');
     } catch (error: any) {
-      console.error('[Chat Debug] Error:', error);
       await addMessage('assistant', `Sorry, I encountered an error: ${error.message}`);
     } finally {
       setIsChatLoading(false);

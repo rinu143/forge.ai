@@ -68,12 +68,6 @@ export const ConversationProvider: React.FC<ConversationProviderProps> = ({ chil
   };
 
   const addMessage = async (role: 'user' | 'assistant', content: string, conversationId?: string) => {
-    const targetConversation = conversationId 
-      ? conversations.find(c => c.id === conversationId) || currentConversation
-      : currentConversation;
-      
-    if (!targetConversation) return;
-
     try {
       // Always create messages locally for now
       // TODO: Add proper auth token validation and database persistence
@@ -84,24 +78,39 @@ export const ConversationProvider: React.FC<ConversationProviderProps> = ({ chil
         timestamp: Date.now(),
       };
 
-      const updatedTitle = targetConversation.messages.length === 0 && role === 'user' 
-        ? content.slice(0, 50) + (content.length > 50 ? '...' : '')
-        : targetConversation.title;
+      // Use callback-based state updates to ensure we work with latest state
+      setConversations(prev => {
+        // Find the target conversation in the current state
+        let targetConv = conversationId 
+          ? prev.find(c => c.id === conversationId)
+          : prev.find(c => c.id === currentConversation?.id);
+        
+        if (!targetConv) {
+          return prev;
+        }
 
-      const updatedConversation = {
-        ...targetConversation,
-        messages: [...targetConversation.messages, newMessage],
-        title: updatedTitle,
-      };
+        const updatedTitle = targetConv.messages.length === 0 && role === 'user' 
+          ? content.slice(0, 50) + (content.length > 50 ? '...' : '')
+          : targetConv.title;
 
-      setCurrentConversation(updatedConversation);
-      setConversations(prev =>
-        prev.map(conv => (conv.id === updatedConversation.id ? updatedConversation : conv))
-      );
+        const updatedConversation = {
+          ...targetConv,
+          messages: [...targetConv.messages, newMessage],
+          title: updatedTitle,
+        };
+
+        // Update currentConversation to the updated version
+        setCurrentConversation(updatedConversation);
+
+        // Update the conversation in the array
+        return prev.map(conv => 
+          conv.id === updatedConversation.id ? updatedConversation : conv
+        );
+      });
     } catch (error) {
       console.error('Failed to add message:', error);
       throw error;
-      }
+    }
   };
 
   const switchConversation = (conversationId: string) => {

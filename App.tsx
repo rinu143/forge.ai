@@ -27,11 +27,7 @@ const App: React.FC = () => {
   const [discoveryResponse, setDiscoveryResponse] = useState<ProactiveDiscoveryResponse | null>(null);
   const [selectedProblem, setSelectedProblem] = useState<string | null>(null);
 
-  // Debug: Log when responses change
   useEffect(() => {
-    console.log('Analysis Response:', analysisResponse ? 'Available' : 'None');
-    console.log('Discovery Response:', discoveryResponse ? 'Available' : 'None');
-    console.log('Composer Enabled:', !!analysisResponse);
     updateTheme();
   }, [analysisResponse, discoveryResponse]);
 
