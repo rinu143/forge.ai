@@ -8,6 +8,14 @@ import { ViewMode, Theme, UserDrivenResponse, ProactiveDiscoveryResponse } from 
 const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('analyze');
   const [theme, setTheme] = useState<Theme>('dark');
+  const [founderProfile, setFounderProfile] = useState<FounderProfile>({
+    experience_years: 0,
+    team_size: 1,
+    runway_months: 1,
+    tech_stack: [],
+    location: '',
+    funding_stage: 'pre-seed'
+  });
   const [analysisResponse, setAnalysisResponse] = useState<UserDrivenResponse | null>(null);
   const [discoveryResponse, setDiscoveryResponse] = useState<ProactiveDiscoveryResponse | null>(null);
   const [selectedProblem, setSelectedProblem] = useState<string | null>(null);
@@ -44,13 +52,13 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (viewMode) {
       case 'analyze':
-        return <AnalyzeView setResponse={setAnalysisResponse} initialProblem={selectedProblem} onProblemProcessed={() => setSelectedProblem(null)} />;
+        return <AnalyzeView setResponse={setAnalysisResponse} initialProblem={selectedProblem} onProblemProcessed={() => setSelectedProblem(null)} profile={founderProfile} setProfile={setFounderProfile} />;
       case 'discover':
-        return <DiscoverView setResponse={setDiscoveryResponse} onProblemSelect={handleProblemSelect} />;
+        return <DiscoverView setResponse={setDiscoveryResponse} onProblemSelect={handleProblemSelect} profile={founderProfile} setProfile={setFounderProfile} />;
       case 'compose':
         return <ComposerView analysis={analysisResponse} opportunities={discoveryResponse?.problems || []} />;
       default:
-        return <AnalyzeView setResponse={setAnalysisResponse} initialProblem={selectedProblem} onProblemProcessed={() => setSelectedProblem(null)} />;
+        return <AnalyzeView setResponse={setAnalysisResponse} initialProblem={selectedProblem} onProblemProcessed={() => setSelectedProblem(null)} profile={founderProfile} setProfile={setFounderProfile} />;
     }
   };
 
