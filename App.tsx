@@ -3,11 +3,11 @@ import Sidebar from './components/Sidebar';
 import AnalyzeView from './components/AnalyzeView';
 import DiscoverView from './components/DiscoverView';
 import ComposerView from './components/ComposerView';
-import { ViewMode, Theme, UserDrivenResponse, ProactiveDiscoveryResponse } from './types';
+import { ViewMode, Theme, UserDrivenResponse, ProactiveDiscoveryResponse, FounderProfile } from './types';
 
 const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('analyze');
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setTheme] = useState<Theme>('light'); // Default to light mode
   const [founderProfile, setFounderProfile] = useState<FounderProfile>({
     experience_years: 0,
     team_size: 1,
@@ -52,13 +52,13 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (viewMode) {
       case 'analyze':
-        return <AnalyzeView setResponse={setAnalysisResponse} initialProblem={selectedProblem} onProblemProcessed={() => setSelectedProblem(null)} profile={founderProfile} setProfile={setFounderProfile} />;
+        return <AnalyzeView setResponse={setAnalysisResponse} initialProblem={selectedProblem} onProblemProcessed={() => setSelectedProblem(null)} profile={founderProfile} setProfile={setFounderProfile} theme={theme} />;
       case 'discover':
         return <DiscoverView setResponse={setDiscoveryResponse} onProblemSelect={handleProblemSelect} profile={founderProfile} setProfile={setFounderProfile} />;
       case 'compose':
         return <ComposerView analysis={analysisResponse} opportunities={discoveryResponse?.problems || []} />;
       default:
-        return <AnalyzeView setResponse={setAnalysisResponse} initialProblem={selectedProblem} onProblemProcessed={() => setSelectedProblem(null)} profile={founderProfile} setProfile={setFounderProfile} />;
+        return <AnalyzeView setResponse={setAnalysisResponse} initialProblem={selectedProblem} onProblemProcessed={() => setSelectedProblem(null)} profile={founderProfile} setProfile={setFounderProfile} theme={theme} />;
     }
   };
 
