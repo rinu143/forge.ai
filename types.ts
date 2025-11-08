@@ -72,22 +72,26 @@ export interface InsightFusion {
 
 export type LiveDataSource = "slack" | "github" | "notion" | "email" | "market_news";
 export interface LiveData {
-    source: LiveDataSource;
-    content: string;
-    timestamp: string;
+  source: LiveDataSource;
+  content: string;
+  timestamp: string;
 }
 
 export type Priority = "urgent" | "high" | "medium" | "low";
 
 export interface ComposedActionPlan {
-    mode: 'compose';
-    cap_id: string;
-    generated_at: string;
-    founder_profile: FounderProfile;
-    priority: Priority;
-    fusion_summary: string;
-    fused_insights: InsightFusion[];
-    action_plan: ActionTask[];
-    execution_log: string[];
-    next_heartbeat_in_seconds: number;
+  mode: 'compose';
+  cap_id: string;
+  generated_at: string;
+  founder_profile: FounderProfile;
+  priority: Priority;
+  fusion_summary: string;
+  fused_insights: InsightFusion[];
+  action_plan: ActionTask[];
+  execution_log: string[];
+  next_heartbeat_in_seconds: number;
+  key_considerations: {
+    financial: string[];
+    governmental: string[];
+  };
 }
