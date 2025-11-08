@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { ViewMode, Theme } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 import { AnvilIcon } from './icons/AnvilIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import { SunIcon } from './icons/SunIcon';
 import { MoonIcon } from './icons/MoonIcon';
 import { ZapIcon } from './icons/ZapIcon';
 import { MenuIcon, XIcon } from './icons/MenuIcon';
-// Fix: Import FlaskConicalIcon.
 import { FlaskConicalIcon } from './icons/FlaskConicalIcon';
+import { MessageSquareIcon } from './icons/MessageSquareIcon';
 
 interface SidebarProps {
   activeMode: ViewMode;
@@ -45,9 +46,15 @@ const NavButton: React.FC<{
 
 const Sidebar: React.FC<SidebarProps> = ({ activeMode, onModeChange, theme, onThemeChange, isComposerEnabled }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   const handleNavClick = (mode: ViewMode) => {
     onModeChange(mode);
+    setIsMenuOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
     setIsMenuOpen(false);
   };
 
@@ -88,10 +95,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMode, onModeChange, theme, onTh
           onClick={() => setIsMenuOpen(false)}
         >
           <div 
-            className="bg-gray-100 dark:bg-[#1a1a1a] w-64 h-full shadow-xl animate-slide-in-left"
+            className="bg-gray-100 dark:bg-[#1a1a1a] w-64 h-full shadow-xl animate-slide-in-left flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <nav className="flex flex-col space-y-2 p-4">
+              <NavButton mode="chat" activeMode={activeMode} onClick={handleNavClick}>
+                <MessageSquareIcon className="w-5 h-5" />
+                <span>Chat</span>
+              </NavButton>
               <NavButton mode="analyze" activeMode={activeMode} onClick={handleNavClick}>
                 <FlaskConicalIcon className="w-5 h-5" />
                 <span>Analyze</span>
@@ -111,6 +122,26 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMode, onModeChange, theme, onTh
                 <span>Composer</span>
               </NavButton>
             </nav>
+
+            <div className="mt-auto p-4 space-y-3">
+              {user && (
+                <div className="px-4 py-3 rounded-lg bg-gray-200 dark:bg-white/10">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Signed in as</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</div>
+                </div>
+              )}
+              
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Logout</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -125,6 +156,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMode, onModeChange, theme, onTh
         </div>
         
         <nav className="flex flex-col space-y-2">
+          <NavButton mode="chat" activeMode={activeMode} onClick={onModeChange}>
+            <MessageSquareIcon className="w-5 h-5" />
+            <span>Chat</span>
+          </NavButton>
           <NavButton mode="analyze" activeMode={activeMode} onClick={onModeChange}>
             <FlaskConicalIcon className="w-5 h-5" />
             <span>Analyze</span>
@@ -145,7 +180,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMode, onModeChange, theme, onTh
           </NavButton>
         </nav>
 
-        <div className="mt-auto">
+        <div className="mt-auto space-y-3">
+          {user && (
+            <div className="px-4 py-3 rounded-lg bg-gray-200 dark:bg-white/10">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Signed in as</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</div>
+            </div>
+          )}
+          
           <button
             onClick={onThemeChange}
             className="w-full flex items-center justify-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-[#1a1a1a] focus:ring-gray-400"
@@ -153,6 +196,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMode, onModeChange, theme, onTh
           >
             {theme === 'dark' ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
             <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-[#1a1a1a] focus:ring-red-400"
+            aria-label="Logout"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Logout</span>
           </button>
         </div>
       </div>

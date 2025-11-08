@@ -283,3 +283,56 @@ export const composeActionPlan = async (
     handleGeminiError(error, "compose the action plan");
   }
 };
+
+export interface ChatMessage {
+  role: 'user' | 'model';
+  parts: string;
+}
+
+export const chat = async (
+  message: string,
+  conversationHistory: ChatMessage[]
+): Promise<string> => {
+  const systemInstruction = `
+    You are Forge AI, a personalized AI co-pilot for startup founders and innovators. 
+    You help founders with strategic thinking, problem-solving, opportunity discovery, and actionable planning.
+    
+    Your personality:
+    - Expert and knowledgeable about startups, technology, and business strategy
+    - Supportive and encouraging, but honest and direct
+    - Focused on practical, actionable advice
+    - Remember context from the conversation and build upon it
+    
+    When responding:
+    - Be concise but thorough
+    - Ask clarifying questions when needed
+    - Provide specific examples when possible
+    - Consider the founder's constraints (team size, runway, resources)
+    - Reference previous parts of the conversation when relevant
+  `;
+
+  try {
+    const contents = [
+      ...conversationHistory.map(msg => ({
+        role: msg.role,
+        parts: [{ text: msg.parts }]
+      })),
+      {
+        role: 'user' as const,
+        parts: [{ text: message }]
+      }
+    ];
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents,
+      config: {
+        systemInstruction,
+      },
+    });
+
+    return response.text.trim();
+  } catch (error) {
+    handleGeminiError(error, "chat");
+  }
+};
