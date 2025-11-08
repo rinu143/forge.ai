@@ -73,6 +73,20 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
 
   const processedSignatureRef = useRef<string | null>(null);
 
+  const seedChatWithAnalysis = useCallback(async (problem: string, analysis: UserDrivenResponse) => {
+    await createNewConversation();
+    
+    await addMessage('user', problem);
+    
+    const analysisText = `# Analysis Complete\n\n## Problem Statement\n${problem}\n\n## Analysis Results\n\n${analysis.chunks.map(chunk => 
+      `### ${chunk.title}\n${chunk.analysis}\n\n**Key Insights:**\n${chunk.key_insights.map(insight => `- ${insight}`).join('\n')}`
+    ).join('\n\n')}`;
+    
+    await addMessage('assistant', analysisText);
+    
+    setActiveTab('chat');
+  }, [createNewConversation, addMessage]);
+
   React.useEffect(() => {
     if (initialProblem) {
       const currentSignature = JSON.stringify({ problem: initialProblem, profile });
@@ -94,6 +108,7 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
             if (onProblemProcessed) {
               onProblemProcessed();
             }
+            await seedChatWithAnalysis(initialProblem, result);
           } catch (err: any) {
             setError(err.message || 'An unknown error occurred.');
           } finally {
@@ -103,7 +118,7 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
         autoAnalyze();
       }
     }
-  }, [initialProblem, profile, setResponse, onProblemProcessed]);
+  }, [initialProblem, profile, setResponse, onProblemProcessed, seedChatWithAnalysis]);
 
   const handleAnalyzeSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,12 +133,13 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
       const result = await analyzeProblem(userInput, profile);
       setCurrentResponse(result);
       setResponse(result);
+      await seedChatWithAnalysis(userInput, result);
     } catch (err: any) {
       setError(err.message || 'An unknown error occurred.');
     } finally {
       setIsLoading(false);
     }
-  }, [userInput, profile, setResponse]);
+  }, [userInput, profile, setResponse, seedChatWithAnalysis]);
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
