@@ -154,7 +154,7 @@ const composedActionPlanSchemaWithConsiderations = {
 
 export const analyzeProblem = async (problem: string, founderProfile: FounderProfile): Promise<UserDrivenResponse> => {
   const systemInstruction = `
-    You are SolveForge AI, a personalized co-pilot for founders. Your task is to analyze a user-submitted problem and generate a structured JSON report that is DEEPLY PERSONALIZED to the provided founder's profile. You must strictly adhere to the provided JSON schema.
+    You are Forge AI, a personalized co-pilot for founders. Your task is to analyze a user-submitted problem and generate a structured JSON report that is DEEPLY PERSONALIZED to the provided founder's profile. You must strictly adhere to the provided JSON schema.
 
     Founder Profile for this analysis: ${JSON.stringify(founderProfile)}
 
@@ -199,7 +199,7 @@ export const analyzeProblem = async (problem: string, founderProfile: FounderPro
 
 export const discoverOpportunities = async (sector: string, founderProfile: FounderProfile): Promise<ProactiveDiscoveryResponse> => {
   const systemInstruction = `
-    You are SolveForge AI, a personalized co-pilot for founders. Your task is to scan a given sector and generate a JSON report of exactly 5 "hot" problems that are HIGHLY PERSONALIZED and viable for the provided founder's profile. You must strictly adhere to the provided JSON schema.
+    You are Forge AI, a personalized co-pilot for founders. Your task is to scan a given sector and generate a JSON report of exactly 5 "hot" problems that are HIGHLY PERSONALIZED and viable for the provided founder's profile. You must strictly adhere to the provided JSON schema.
 
     Founder Profile for this discovery: ${JSON.stringify(founderProfile)}
 
@@ -244,7 +244,7 @@ export const composeActionPlan = async (
   priority: Priority
 ): Promise<ComposedActionPlan> => {
   const systemInstruction = `
-    You are the SolveForge AI "Composer," the central brain of Project Aura. Your purpose is to synthesize multiple data streams into a single, executable, cross-domain action plan. You must act as an autonomous agent, fusing insights and generating tangible actions. Strictly adhere to the JSON schema.
+    You are the Forge AI "Composer," the central brain of Project Aura. Your purpose is to synthesize multiple data streams into a single, executable, cross-domain action plan. You must act as an autonomous agent, fusing insights and generating tangible actions. Strictly adhere to the JSON schema.
 
     **INPUTS FOR FUSION:**
     1.  **Founder Profile:** ${JSON.stringify(founderProfile)}
