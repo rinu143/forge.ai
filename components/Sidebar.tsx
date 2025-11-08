@@ -8,7 +8,6 @@ import { MoonIcon } from './icons/MoonIcon';
 import { ZapIcon } from './icons/ZapIcon';
 import { MenuIcon, XIcon } from './icons/MenuIcon';
 import { FlaskConicalIcon } from './icons/FlaskConicalIcon';
-import { MessageSquareIcon } from './icons/MessageSquareIcon';
 
 interface SidebarProps {
   activeMode: ViewMode;
@@ -99,10 +98,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMode, onModeChange, theme, onTh
             onClick={(e) => e.stopPropagation()}
           >
             <nav className="flex flex-col space-y-2 p-4">
-              <NavButton mode="chat" activeMode={activeMode} onClick={handleNavClick}>
-                <MessageSquareIcon className="w-5 h-5" />
-                <span>Chat</span>
-              </NavButton>
               <NavButton mode="analyze" activeMode={activeMode} onClick={handleNavClick}>
                 <FlaskConicalIcon className="w-5 h-5" />
                 <span>Analyze</span>
@@ -156,10 +151,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMode, onModeChange, theme, onTh
         </div>
         
         <nav className="flex flex-col space-y-2">
-          <NavButton mode="chat" activeMode={activeMode} onClick={onModeChange}>
-            <MessageSquareIcon className="w-5 h-5" />
-            <span>Chat</span>
-          </NavButton>
           <NavButton mode="analyze" activeMode={activeMode} onClick={onModeChange}>
             <FlaskConicalIcon className="w-5 h-5" />
             <span>Analyze</span>

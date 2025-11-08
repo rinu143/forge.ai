@@ -1,18 +1,21 @@
-import React, { useState, useCallback } from 'react';
-import { analyzeProblem } from '../services/geminiService';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { analyzeProblem, chat, ChatMessage as GeminiChatMessage } from '../services/geminiService';
 import { UserDrivenResponse, AnalysisChunk, FounderProfile, Theme } from '../types';
+import { useConversation, Message } from '../contexts/ConversationContext';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import { Loader } from './Loader';
 import { LightbulbIcon } from './icons/LightbulbIcon';
 import { FlaskConicalIcon } from './icons/FlaskConicalIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import FounderProfileForm from './FounderProfileForm';
-import { MarkdownRenderer } from './MarkdownRenderer';
 import AnalysisVisualizer from './AnalysisVisualizer';
 
 interface AnalyzeViewProps {
   setResponse: (response: UserDrivenResponse | null) => void;
   initialProblem?: string | null;
   onProblemProcessed?: () => void;
+  profile: FounderProfile;
+  setProfile: (profile: FounderProfile) => void;
   theme: Theme;
 }
 
@@ -45,50 +48,84 @@ const AnalysisChunkCard: React.FC<{ chunk: AnalysisChunk }> = ({ chunk }) => {
   );
 };
 
-const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, onProblemProcessed, theme }) => {
+const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, onProblemProcessed, profile, setProfile, theme }) => {
+  const [activeTab, setActiveTab] = useState<'analyze' | 'history'>('analyze');
   const [userInput, setUserInput] = useState('');
-  const [founderProfile, setFounderProfile] = useState<FounderProfile>({
-    experience_years: 0,
-    team_size: 0,
-    runway_months: 0,
-    tech_stack: [],
-    location: '',
-    funding_stage: 'pre-seed'
-  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentResponse, setCurrentResponse] = useState<UserDrivenResponse | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'visualizer'>('cards');
 
-  // Auto-submit when initialProblem is provided
+  const { currentConversation, conversations, addMessage, createNewConversation } = useConversation();
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const processedSignatureRef = useRef<string | null>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [currentConversation?.messages]);
+
+  const seedChatWithAnalysis = useCallback(async (problem: string, analysis: UserDrivenResponse) => {
+    console.log('[Chat Debug] Seeding chat with analysis');
+    const newConv = await createNewConversation();
+    console.log('[Chat Debug] New conversation created:', newConv?.id);
+    
+    if (!newConv) {
+      console.error('[Chat Debug] Failed to create conversation');
+      return;
+    }
+    
+    await addMessage('user', problem, newConv.id);
+    console.log('[Chat Debug] Added problem message');
+    
+    const analysisText = `# Analysis Complete\n\n## Problem Statement\n${problem}\n\n## Analysis Results\n\n${analysis.chunks.map(chunk => 
+      `### ${chunk.title}\n${chunk.analysis}\n\n**Key Insights:**\n${chunk.key_insights.map(insight => `- ${insight}`).join('\n')}`
+    ).join('\n\n')}\n\n## Solution Guide\n${analysis.synthesis.solution_guide.map((step, idx) => `${idx + 1}. ${step}`).join('\n')}`;
+    
+    await addMessage('assistant', analysisText, newConv.id);
+    console.log('[Chat Debug] Chat seeded successfully, total messages:', 2);
+  }, [createNewConversation, addMessage]);
+
   React.useEffect(() => {
     if (initialProblem) {
-      setUserInput(initialProblem);
-      // Trigger analysis automatically
-      const autoAnalyze = async () => {
-        setIsLoading(true);
-        setError(null);
-        setCurrentResponse(null);
-        setResponse(null);
+      const currentSignature = JSON.stringify({ problem: initialProblem, profile });
+      
+      if (processedSignatureRef.current !== currentSignature) {
+        processedSignatureRef.current = currentSignature;
+        setUserInput(initialProblem);
+        setActiveTab('analyze');
+        const autoAnalyze = async () => {
+          setIsLoading(true);
+          setError(null);
+          setCurrentResponse(null);
+          setResponse(null);
 
-        try {
-          const result = await analyzeProblem(initialProblem, founderProfile);
-          setCurrentResponse(result);
-          setResponse(result);
-          if (onProblemProcessed) {
-            onProblemProcessed();
+          try {
+            const result = await analyzeProblem(initialProblem, profile);
+            setCurrentResponse(result);
+            setResponse(result);
+            await seedChatWithAnalysis(initialProblem, result);
+            if (onProblemProcessed) {
+              onProblemProcessed();
+            }
+          } catch (err: any) {
+            setError(err.message || 'An unknown error occurred.');
+          } finally {
+            setIsLoading(false);
           }
-        } catch (err: any) {
-          setError(err.message || 'An unknown error occurred.');
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      autoAnalyze();
+        };
+        autoAnalyze();
+      }
     }
-  }, [initialProblem, founderProfile, setResponse, onProblemProcessed]);
+  }, [initialProblem, profile, setResponse, onProblemProcessed, seedChatWithAnalysis]);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const handleAnalyzeSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInput.trim()) return;
 
@@ -98,105 +135,289 @@ const AnalyzeView: React.FC<AnalyzeViewProps> = ({ setResponse, initialProblem, 
     setResponse(null);
 
     try {
-      const result = await analyzeProblem(userInput, founderProfile);
+      const result = await analyzeProblem(userInput, profile);
       setCurrentResponse(result);
       setResponse(result);
+      await seedChatWithAnalysis(userInput, result);
     } catch (err: any) {
       setError(err.message || 'An unknown error occurred.');
     } finally {
       setIsLoading(false);
     }
-  }, [userInput, founderProfile, setResponse]);
+  }, [userInput, profile, setResponse, seedChatWithAnalysis]);
+
+  const handleChatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('[Chat Debug] Submit clicked, input:', chatInput);
+    if (!chatInput.trim() || isChatLoading) {
+      console.log('[Chat Debug] Skipping - empty or loading');
+      return;
+    }
+
+    const userMessage = chatInput.trim();
+    setChatInput('');
+    setIsChatLoading(true);
+    console.log('[Chat Debug] Sending message:', userMessage);
+
+    try {
+      await addMessage('user', userMessage);
+      console.log('[Chat Debug] User message added');
+
+      const history: GeminiChatMessage[] = [
+        ...(currentConversation?.messages.map(msg => ({
+          role: msg.role === 'user' ? ('user' as const) : ('model' as const),
+          parts: msg.content
+        })) || []),
+        { role: 'user' as const, parts: userMessage }
+      ];
+
+      console.log('[Chat Debug] Calling AI with history length:', history.length);
+      const response = await chat(userMessage, history);
+      console.log('[Chat Debug] AI responded with:', response.substring(0, 50));
+      await addMessage('assistant', response);
+      console.log('[Chat Debug] Assistant message added');
+    } catch (error: any) {
+      console.error('[Chat Debug] Error:', error);
+      await addMessage('assistant', `Sorry, I encountered an error: ${error.message}`);
+    } finally {
+      setIsChatLoading(false);
+      chatInputRef.current?.focus();
+    }
+  };
+
+  const handleChatKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleChatSubmit(e);
+    }
+  };
+
 
   return (
-    <div className="animate-fade-in">
-      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-black dark:text-white px-4">Problem Analysis Engine</h2>
-      <p className="text-center text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-2 max-w-2xl mx-auto px-4">Get a deep, structured analysis tailored to your specific founder profile and constraints.</p>
-      
-      <div className="mt-6 sm:mt-8 lg:mt-10 max-w-4xl mx-auto">
-        <FounderProfileForm profile={founderProfile} setProfile={setFounderProfile} disabled={isLoading} />
+    <div className="flex flex-col h-full animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <span className="gemini-gradient-text">Forge AI</span> Analysis
+        </h1>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          Analyze problems and view conversation history
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 sm:mt-8 max-w-4xl mx-auto">
-        <div className="gemini-glow-input border border-gray-300 dark:border-gray-500/30 rounded-lg p-0.5 transition-all duration-300">
-          <textarea
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Enter a problem to analyze, e.g., Predict crop failure for small Indian farmers..."
-            className="w-full h-24 sm:h-32 p-3 sm:p-4 bg-gray-50 dark:bg-[#1a1a1a] rounded-md text-sm sm:text-base text-black dark:text-white placeholder-gray-500 focus:outline-none transition-all duration-300 resize-none"
-            disabled={isLoading}
-            required
-          />
-        </div>
+      <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-white/10">
         <button
-          type="submit"
-          className="mt-4 sm:mt-6 w-full bg-gradient-to-r from-[var(--gradient-start)] to-[var(--gradient-end)] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center text-base sm:text-lg gemini-glow-button"
-          disabled={isLoading || !userInput.trim()}
+          onClick={() => setActiveTab('analyze')}
+          className={`px-4 py-2 text-sm font-medium transition-all duration-200 border-b-2 ${
+            activeTab === 'analyze'
+              ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
         >
-          {isLoading ? <><Loader /> <span className="ml-2">Thinking...</span></> : <><SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-2"/>Forge Personalized Analysis</>}
+          Analyze
         </button>
-      </form>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-4 py-2 text-sm font-medium transition-all duration-200 border-b-2 ${
+            activeTab === 'history'
+              ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          History
+        </button>
+      </div>
 
-      {error && <div className="mt-8 text-center text-gray-800 dark:text-gray-300 bg-gray-200 dark:bg-gray-800/50 p-4 rounded-lg max-w-3xl mx-auto border border-gray-400 dark:border-gray-600">{error}</div>}
+      {activeTab === 'analyze' && (
+        <div className="flex-1 overflow-y-auto">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-black dark:text-white px-4">Problem Analysis Engine</h2>
+          <p className="text-center text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-2 max-w-2xl mx-auto px-4">Get a deep, structured analysis tailored to your specific founder profile and constraints.</p>
+          
+          <div className="mt-6 sm:mt-8 lg:mt-10 max-w-4xl mx-auto">
+            <FounderProfileForm profile={profile} setProfile={setProfile} disabled={isLoading} />
+          </div>
 
-      {currentResponse && (
-        <div className="mt-12 max-w-6xl mx-auto animate-slide-up">
-          <div className="bg-gray-50 dark:bg-[#1a1a1a]/80 border border-gray-200 dark:border-white/10 p-4 sm:p-6 rounded-xl mb-8">
-            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
-              <div className="flex-1">
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase">Original Problem</h3>
-                <p className="text-black dark:text-gray-200 italic mt-1 text-sm sm:text-base">"{currentResponse.input_problem}"</p>
-                <hr className="my-4 border-gray-200 dark:border-white/10" />
-                <h3 className="text-xs sm:text-sm font-semibold text-black dark:text-white tracking-wider uppercase">Refined & Personalized Problem</h3>
-                <p className="text-black dark:text-white font-medium text-base sm:text-lg lg:text-xl mt-1">{currentResponse.refined_problem}</p>
+          <form onSubmit={handleAnalyzeSubmit} className="mt-6 sm:mt-8 max-w-4xl mx-auto">
+            <div className="gemini-glow-input border border-gray-300 dark:border-gray-500/30 rounded-lg p-0.5 transition-all duration-300">
+              <textarea
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder="Enter a problem to analyze, e.g., Predict crop failure for small Indian farmers..."
+                className="w-full h-24 sm:h-32 p-3 sm:p-4 bg-gray-50 dark:bg-[#1a1a1a] rounded-md text-sm sm:text-base text-black dark:text-white placeholder-gray-500 focus:outline-none transition-all duration-300 resize-none"
+                disabled={isLoading}
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="mt-4 sm:mt-6 w-full bg-gradient-to-r from-[var(--gradient-start)] to-[var(--gradient-end)] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center text-base sm:text-lg gemini-glow-button"
+              disabled={isLoading || !userInput.trim()}
+            >
+              {isLoading ? <><Loader /> <span className="ml-2">Thinking...</span></> : <><SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-2"/>Forge Personalized Analysis</>}
+            </button>
+          </form>
+
+          {error && <div className="mt-8 text-center text-gray-800 dark:text-gray-300 bg-gray-200 dark:bg-gray-800/50 p-4 rounded-lg max-w-3xl mx-auto border border-gray-400 dark:border-gray-600">{error}</div>}
+
+          {currentResponse && (
+            <div className="mt-12 max-w-6xl mx-auto animate-slide-up">
+              <div className="bg-gray-50 dark:bg-[#1a1a1a]/80 border border-gray-200 dark:border-white/10 p-4 sm:p-6 rounded-xl mb-8">
+                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase">Original Problem</h3>
+                    <p className="text-black dark:text-gray-200 italic mt-1 text-sm sm:text-base">"{currentResponse.input_problem}"</p>
+                    <hr className="my-4 border-gray-200 dark:border-white/10" />
+                    <h3 className="text-xs sm:text-sm font-semibold text-black dark:text-white tracking-wider uppercase">Refined & Personalized Problem</h3>
+                    <p className="text-black dark:text-white font-medium text-base sm:text-lg lg:text-xl mt-1">{currentResponse.refined_problem}</p>
+                  </div>
+                  <div className="flex gap-2 lg:ml-4 shrink-0">
+                    <button
+                      onClick={() => setViewMode('cards')}
+                      className={`flex-1 lg:flex-none px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                        viewMode === 'cards'
+                          ? 'bg-black dark:bg-white text-white dark:text-black'
+                          : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      Cards
+                    </button>
+                    <button
+                      onClick={() => setViewMode('visualizer')}
+                      className={`flex-1 lg:flex-none px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                        viewMode === 'visualizer'
+                          ? 'bg-black dark:bg-white text-white dark:text-black'
+                          : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      Visualizer
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="flex gap-2 lg:ml-4 shrink-0">
-                <button
-                  onClick={() => setViewMode('cards')}
-                  className={`flex-1 lg:flex-none px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
-                    viewMode === 'cards'
-                      ? 'bg-black dark:bg-white text-white dark:text-black'
-                      : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  Cards
-                </button>
-                <button
-                  onClick={() => setViewMode('visualizer')}
-                  className={`flex-1 lg:flex-none px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
-                    viewMode === 'visualizer'
-                      ? 'bg-black dark:bg-white text-white dark:text-black'
-                      : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  Visualizer
-                </button>
+              
+              {viewMode === 'visualizer' ? (
+                <div className="mb-8">
+                  <AnalysisVisualizer response={currentResponse} theme={theme} />
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {currentResponse.chunks.map((chunk) => (
+                    <AnalysisChunkCard key={chunk.id} chunk={chunk} />
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-8 bg-gray-100 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-500/30 rounded-xl p-6">
+                 <h3 className="text-xl font-semibold text-black dark:text-white">Solution Guide: Personalized MVP Steps</h3>
+                 <ol className="mt-4 list-decimal list-inside space-y-3">
+                    {currentResponse.synthesis.solution_guide.map((step, index) => (
+                        <li key={index} className="ml-2">
+                          <MarkdownRenderer content={step} className="inline" />
+                        </li>
+                    ))}
+                 </ol>
+              </div>
+
+              <div className="mt-12 border-t border-gray-200 dark:border-white/10 pt-8">
+                <h3 className="text-2xl font-semibold text-black dark:text-white mb-2 flex items-center gap-2">
+                  <SparklesIcon className="w-6 h-6" />
+                  Refine Your Solution
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Ask follow-up questions to fine-tune the analysis and get more specific guidance
+                </p>
+
+                <div className="space-y-6">
+                  {currentConversation?.messages.slice(2).map((message: Message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                          message.role === 'user'
+                            ? 'bg-gray-900 dark:bg-white text-white dark:text-black'
+                            : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white'
+                        }`}
+                      >
+                        {message.role === 'assistant' ? (
+                          <div className="prose dark:prose-invert max-w-none">
+                            <MarkdownRenderer content={message.content} />
+                          </div>
+                        ) : (
+                          <p className="whitespace-pre-wrap">{message.content}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {isChatLoading && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-gray-100 dark:bg-white/10">
+                        <Loader />
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <form onSubmit={handleChatSubmit} className="mt-6">
+                  <div className="flex gap-2">
+                    <textarea
+                      ref={chatInputRef}
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={handleChatKeyDown}
+                      placeholder="Ask follow-up questions... (e.g., 'Can you elaborate on the MVP approach?' or 'What about technical challenges?')"
+                      rows={2}
+                      className="flex-1 resize-none px-4 py-3 bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 border-none"
+                      disabled={isChatLoading}
+                    />
+                    <button
+                      type="submit"
+                      disabled={isChatLoading || !chatInput.trim()}
+                      className="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-black font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                    >
+                      Send
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Press Enter to send, Shift+Enter for a new line
+                  </p>
+                </form>
               </div>
             </div>
-          </div>
-          
-          {viewMode === 'visualizer' ? (
-            <div className="mb-8">
-              <AnalysisVisualizer response={currentResponse} theme={theme} />
+          )}
+        </div>
+      )}
+
+      {activeTab === 'history' && (
+        <div className="flex-1 overflow-y-auto">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Conversation History</h3>
+          {conversations.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 dark:text-gray-400">No analysis history yet. Start analyzing problems to build your history!</p>
             </div>
           ) : (
-            <div className="space-y-6">
-              {currentResponse.chunks.map((chunk) => (
-                <AnalysisChunkCard key={chunk.id} chunk={chunk} />
+            <div className="space-y-3">
+              {conversations.map((conv) => (
+                <div
+                  key={conv.id}
+                  className="w-full text-left px-4 py-3 rounded-lg bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">
+                        {conv.messages[0]?.content.substring(0, 60) || 'Analysis'}
+                        {conv.messages[0]?.content.length > 60 ? '...' : ''}
+                      </p>
+                      <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">
+                        {conv.messages.length} message{conv.messages.length !== 1 ? 's' : ''} • {new Date(conv.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           )}
-
-          <div className="mt-8 bg-gray-100 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-500/30 rounded-xl p-6">
-             <h3 className="text-xl font-semibold text-black dark:text-white">Solution Guide: Personalized MVP Steps</h3>
-             <ol className="mt-4 list-decimal list-inside space-y-3">
-                {currentResponse.synthesis.solution_guide.map((step, index) => (
-                    <li key={index} className="ml-2">
-                      <MarkdownRenderer content={step} className="inline" />
-                    </li>
-                ))}
-             </ol>
-          </div>
         </div>
       )}
     </div>

@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { authAPI, getAuthToken, User as APIUser } from '../services/apiService';
 
 export interface User {
-  id: string;
+  id: number;
   email: string;
   name: string;
-  createdAt: string;
 }
 
 interface AuthContextType {
@@ -34,47 +34,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('forgeai_user');
-    if (storedUser) {
+    const token = getAuthToken();
+    if (storedUser && token) {
       setUser(JSON.parse(storedUser));
     }
   }, []);
 
   const register = async (name: string, email: string, password: string): Promise<void> => {
-    const users = JSON.parse(localStorage.getItem('forgeai_users') || '[]');
-    
-    if (users.find((u: any) => u.email === email)) {
-      throw new Error('User with this email already exists');
-    }
-
-    const newUser: User = {
-      id: crypto.randomUUID(),
-      email,
-      name,
-      createdAt: new Date().toISOString(),
-    };
-
-    const userWithPassword = { ...newUser, password };
-    users.push(userWithPassword);
-    localStorage.setItem('forgeai_users', JSON.stringify(users));
-    
-    localStorage.setItem('forgeai_user', JSON.stringify(newUser));
-    setUser(newUser);
+    const { user, token } = await authAPI.register({ email, password, name });
+    localStorage.setItem('forgeai_user', JSON.stringify(user));
+    setUser(user);
   };
 
   const login = async (email: string, password: string): Promise<void> => {
-    const users = JSON.parse(localStorage.getItem('forgeai_users') || '[]');
-    const user = users.find((u: any) => u.email === email && u.password === password);
-
-    if (!user) {
-      throw new Error('Invalid email or password');
-    }
-
-    const { password: _, ...userWithoutPassword } = user;
-    localStorage.setItem('forgeai_user', JSON.stringify(userWithoutPassword));
-    setUser(userWithoutPassword);
+    const { user, token } = await authAPI.login({ email, password });
+    localStorage.setItem('forgeai_user', JSON.stringify(user));
+    setUser(user);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await authAPI.logout();
     localStorage.removeItem('forgeai_user');
     setUser(null);
   };

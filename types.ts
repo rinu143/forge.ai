@@ -1,4 +1,4 @@
-export type ViewMode = 'analyze' | 'discover' | 'compose' | 'chat';
+export type ViewMode = 'analyze' | 'discover' | 'compose';
 export type Theme = 'light' | 'dark';
 
 export type FundingStage = "pre-seed" | "seed" | "pre-series-a" | "series-a+";

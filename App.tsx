@@ -3,7 +3,6 @@ import Sidebar from './components/Sidebar';
 import AnalyzeView from './components/AnalyzeView';
 import DiscoverView from './components/DiscoverView';
 import ComposerView from './components/ComposerView';
-import ChatView from './components/ChatView';
 import LoginView from './components/LoginView';
 import RegisterView from './components/RegisterView';
 import { useAuth } from './contexts/AuthContext';
@@ -12,7 +11,7 @@ import { ViewMode, Theme, UserDrivenResponse, ProactiveDiscoveryResponse, Founde
 const App: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
-  const [viewMode, setViewMode] = useState<ViewMode>('chat');
+  const [viewMode, setViewMode] = useState<ViewMode>('analyze');
   const [theme, setTheme] = useState<Theme>('light');
   const [founderProfile, setFounderProfile] = useState<FounderProfile>({
     experience_years: 0,
@@ -60,8 +59,6 @@ const App: React.FC = () => {
 
   const renderView = () => {
     switch (viewMode) {
-      case 'chat':
-        return <ChatView />;
       case 'analyze':
         return <AnalyzeView setResponse={setAnalysisResponse} initialProblem={selectedProblem} onProblemProcessed={() => setSelectedProblem(null)} profile={founderProfile} setProfile={setFounderProfile} theme={theme} />;
       case 'discover':
@@ -69,7 +66,7 @@ const App: React.FC = () => {
       case 'compose':
         return <ComposerView analysis={analysisResponse} opportunities={discoveryResponse?.problems || []} />;
       default:
-        return <ChatView />;
+        return <AnalyzeView setResponse={setAnalysisResponse} initialProblem={null} profile={founderProfile} setProfile={setFounderProfile} theme={theme} />;
     }
   };
 

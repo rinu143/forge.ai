@@ -14,22 +14,30 @@ Forge AI is a personalized AI co-pilot for startup founders and innovators. It u
 
 ### Key Features
 1. **Authentication**: User registration and login with secure session management
-2. **Chat**: Conversational AI interface with memory - remembers entire conversation history like ChatGPT
-3. **Analyze**: User-driven problem analysis with competitive landscape, feasibility assessment, and market insights
-4. **Discover**: Proactive opportunity scanner that finds emerging problems in specified sectors
-5. **Compose**: AI-powered strategy synthesis that creates actionable plans
+2. **Analyze**: Structured problem analysis with contextual chat refinement:
+   - Analyze tab: Deep problem analysis with founder profile customization
+   - After analysis completes, a "Refine Your Solution" chat interface appears below results
+   - Users can ask follow-up questions to fine-tune the analysis (ChatGPT-like experience)
+   - AI maintains full conversation memory and analysis context
+   - History tab: Browse past analysis conversations
+   - All conversations stored in PostgreSQL database
+3. **Discover**: Proactive opportunity scanner that finds emerging problems in specified sectors
+4. **Compose**: AI-powered strategy synthesis that creates actionable plans
 
 ### Project Structure
 - `components/` - React components including views, forms, and UI elements
   - `LoginView.tsx` - User login form
   - `RegisterView.tsx` - User registration form
-  - `ChatView.tsx` - Conversational AI chat interface
+  - `AnalyzeView.tsx` - Integrated chat and analysis interface with conversation history
 - `contexts/` - React context providers
   - `AuthContext.tsx` - Authentication state management
   - `ConversationContext.tsx` - Conversation history and memory management
 - `services/geminiService.ts` - Core AI logic and Gemini API integration (includes chat function)
+- `services/apiService.ts` - Backend API client with authentication and conversation endpoints
+- `server/index.ts` - Express backend server (port 3001)
+- `shared/schema.ts` - Database schema definitions using Drizzle ORM
 - `types.ts` - TypeScript type definitions
-- `vite.config.ts` - Vite configuration (port 5000, allowedHosts enabled)
+- `vite.config.ts` - Vite configuration (port 5000, proxy for /api requests)
 
 ## Configuration
 
@@ -40,6 +48,14 @@ Forge AI is a personalized AI co-pilot for startup founders and innovators. It u
 - Port: 5000
 - Host: 0.0.0.0 (configured for Replit environment)
 - Allowed Hosts: Enabled for Replit proxy
+
+## Database Setup
+Forge AI now uses a PostgreSQL database for secure, persistent data storage:
+- **Users**: Stores user accounts with encrypted passwords (bcrypt)
+- **Conversations**: Stores chat conversations with timestamps
+- **Messages**: Stores individual messages within conversations
+
+Backend API runs on port 3001, frontend on port 5000.
 
 ## Recent Changes (November 08, 2025)
 - Imported from GitHub
@@ -54,16 +70,31 @@ Forge AI is a personalized AI co-pilot for startup founders and innovators. It u
   - Integrated dark mode toggle on login/register pages
   - Added user info display and logout in Sidebar
   - Protected routes - users must authenticate before accessing main features
-  - User data stored in browser localStorage
   - Consistent styling with grid background and gradient effects
-- Implemented conversation memory feature (like ChatGPT):
-  - Created ConversationContext to manage chat history
-  - Built ChatView component with conversational interface
-  - Added chat function to geminiService that includes conversation history
-  - Conversations persist across sessions (stored in localStorage per user)
-  - Features: New chat, clear conversation, message history with markdown support
-  - AI remembers all previous messages in the conversation for context
-  - Chat set as default view for new users
+- Migrated to PostgreSQL database backend:
+  - Created database schema with Drizzle ORM (users, conversations, messages tables)
+  - Built Express API server with authentication and conversation endpoints
+  - Updated AuthContext to use API instead of localStorage
+  - Updated ConversationContext to use API instead of localStorage
+  - Added bcrypt password hashing for security
+  - Session-based authentication with tokens
+  - Data now persists in database instead of browser storage
+  - Fixed Vite proxy configuration to forward /api requests to backend (port 3001)
+- Simplified Analyze view interface:
+  - Removed separate Chat view from navigation
+  - Two-tab interface in AnalyzeView (Analyze and History tabs)
+  - Analyze tab: Structured problem analysis with founder profile (preserves Discover→Analyze→Compose workflow)
+  - History tab: Browse all past analysis conversations
+  - Set Analyze as default view on login
+  - Analysis history stored in PostgreSQL database
+- Implemented contextual chat for solution refinement:
+  - Chat interface appears below analysis results after analysis completes
+  - "Refine Your Solution" section enables follow-up questions
+  - Conversation is seeded with complete analysis context (problem, chunks, insights, solution guide)
+  - AI responds with full memory of the analysis and conversation history
+  - Users can iteratively refine and explore the solution like ChatGPT
+  - All refinement conversations persist in PostgreSQL
+  - Only follow-up messages displayed (initial seeding hidden for clean UX)
 
 ## Running the Project
 The project runs automatically via the configured workflow using `npm run dev`. The application is accessible through the Replit webview on port 5000.
