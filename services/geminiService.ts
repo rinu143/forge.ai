@@ -1,16 +1,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { 
-    UserDrivenResponse, 
-    ProactiveDiscoveryResponse, 
-    FounderProfile,
-    ComposedActionPlan,
-    Problem,
-    LiveData,
-    Priority
+import {
+  UserDrivenResponse,
+  ProactiveDiscoveryResponse,
+  FounderProfile,
+  ComposedActionPlan,
+  Problem,
+  LiveData,
+  Priority
 } from '../types';
 
 if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable not set. Please provide a valid API key for the app to function.");
+  throw new Error("API_KEY environment variable not set. Please provide a valid API key for the app to function.");
 }
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -136,6 +136,21 @@ const composedActionPlanSchema = {
   required: ['mode', 'cap_id', 'generated_at', 'founder_profile', 'priority', 'fusion_summary', 'fused_insights', 'action_plan', 'execution_log', 'next_heartbeat_in_seconds'],
 };
 
+const composedActionPlanSchemaWithConsiderations = {
+  ...composedActionPlanSchema,
+  properties: {
+    ...composedActionPlanSchema.properties,
+    key_considerations: {
+      type: Type.OBJECT,
+      properties: {
+        financial: { type: Type.ARRAY, items: { type: Type.STRING } },
+        governmental: { type: Type.ARRAY, items: { type: Type.STRING } },
+      },
+      required: ['financial', 'governmental'],
+    },
+  },
+  required: [...composedActionPlanSchema.required, 'key_considerations'],
+};
 
 export const analyzeProblem = async (problem: string, founderProfile: FounderProfile): Promise<UserDrivenResponse> => {
   const systemInstruction = `
@@ -154,6 +169,7 @@ export const analyzeProblem = async (problem: string, founderProfile: FounderPro
         -   **TAM:** Simulate a search for the market size, but then narrow it down to the founder's location (e.g., "Estimate the TAM for EdTech in Tier-2 Indian cities").
         -   **Target User & UVP:** Define a specific user persona relevant to the location. The UVP must be a compelling advantage for that niche (e.g., "Offline-first SMS alerts for farmers in low-connectivity regions").
         -   **Govt Support:** Mention relevant Indian government schemes.
+        -   **Govt Support:** Identify 1-2 specific Indian government schemes (e.g., Startup India Seed Fund, TIDE 2.0) that are highly relevant to the startup's sector, the founder's location, and funding stage. For each scheme, provide a brief on its benefits and a direct link to its official page.
     5.  **Chunk 4 - Resources & Timeline:** The chunk title must be exactly "Resources & Timeline".
         -   **Team:** The team composition must match the founder's team_size.
         -   **Timeline:** The MVP timeline must be realistic for the founder's runway_months: runway <= 3 months -> '2-3 weeks'; runway <= 6 months -> '4-6 weeks'; else -> '2-3 months'.
@@ -212,7 +228,7 @@ export const discoverOpportunities = async (sector: string, founderProfile: Foun
     const jsonText = response.text.trim();
     const result = JSON.parse(jsonText) as ProactiveDiscoveryResponse;
     if (result.problems && result.problems.length > 5) {
-        result.problems = result.problems.slice(0, 5);
+      result.problems = result.problems.slice(0, 5);
     }
     return result;
   } catch (error) {
@@ -238,7 +254,7 @@ export const composeActionPlan = async (
     5.  **Stated Priority:** ${priority}
 
     **7-STEP FUSION ENGINE DIRECTIVE:**
-    1.  **Ingest & Normalize:** Review all provided inputs. Identify key constraints from the founder profile (runway, team size), core insights from the analysis, high-potential problems from opportunities, and urgent signals from the live data.
+    1.  **Ingest & Normalize:** Review all provided inputs. Identify key constraints from the founder profile (runway, team size), core insights from the analysis (especially financial estimates from 'Feasibility & Scalability' and government schemes from 'Market & Edge'), high-potential problems from opportunities, and urgent signals from the live data.
     2.  **Cross-Domain Matching:** Find non-obvious connections between the inputs. For example, connect a 'key_insight' from the analysis with a user comment from 'liveData' and a relevant 'problem_statement' from the opportunities. The goal is to find threats or opportunities that only emerge when looking at the whole picture.
     3.  **Insight Fusion:** Generate 2-5 high-quality 'fused_insights'. Each must cite its sources (e.g., "analysis.chunk2", "opportunities[0]", "liveData.slack"). Assign a 'confidence' score (0.0 to 1.0) based on how strongly the data supports the insight. A high-confidence insight might be, "The offline crash reported in Slack directly threatens the core UVP of serving farmers in low-connectivity areas, which was a key part of the analysis. This is a critical threat."
     4.  **Priority Scoring:** Synthesize a single 'fusion_summary' that explains the most critical takeaway. Then, use the user's stated 'priority' and the founder's constraints (especially a short runway) to determine the urgency of the action plan.
@@ -247,9 +263,9 @@ export const composeActionPlan = async (
         -   **Executability:** About 60% of tasks should be 'executable' by an AI. For these, provide a mock 'command' string (e.g., "github create issue --title 'Fix offline crash'"). For founder tasks, the command should be null.
         -   **Deadlines:** Assign a 'due_in_hours' that is aggressive and reflects the project's priority and the founder's runway.
     6.  **Auto-Execution Simulation:** Populate the 'execution_log' with 1-2 entries simulating that you have ALREADY taken the first step. For example: "EXECUTION: AI created GitHub issue #123 for 'Fix offline crash'." This makes the plan feel alive.
-    7.  **Output & Schedule:** Generate a UUID for 'cap_id' and a current ISO 8601 UTC timestamp for 'generated_at'. Set the 'next_heartbeat_in_seconds' based on priority: 'urgent' -> 300, 'high' -> 900, 'medium' -> 1800, 'low' -> 3600. The entire output must be a single, valid JSON object that strictly follows the schema.
+    7.  **Output & Schedule:** Generate a UUID for 'cap_id' and a current ISO 8601 UTC timestamp for 'generated_at'. Extract financial and governmental notes from the 'analysis' input into the 'key_considerations' field. Set the 'next_heartbeat_in_seconds' based on priority: 'urgent' -> 300, 'high' -> 900, 'medium' -> 1800, 'low' -> 3600. The entire output must be a single, valid JSON object that strictly follows the schema.
   `;
-    
+
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-pro',
@@ -257,7 +273,7 @@ export const composeActionPlan = async (
       config: {
         systemInstruction,
         responseMimeType: 'application/json',
-        responseSchema: composedActionPlanSchema,
+        responseSchema: composedActionPlanSchemaWithConsiderations,
         thinkingConfig: { thinkingBudget: 32768 },
       },
     });

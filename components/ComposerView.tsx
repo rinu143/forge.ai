@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { composeActionPlan } from '../services/geminiService';
-import { 
-    UserDrivenResponse, 
-    Problem, 
+import {
+    UserDrivenResponse,
+    Problem,
     ComposedActionPlan,
     LiveData,
     Priority,
@@ -13,12 +13,12 @@ import { Loader } from './Loader';
 import { ZapIcon } from './icons/ZapIcon';
 
 interface ComposerViewProps {
-  analysis: UserDrivenResponse | null;
-  opportunities: Problem[];
+    analysis: UserDrivenResponse | null;
+    opportunities: Problem[];
 }
 
-const ActionTaskCard: React.FC<{ 
-    task: ActionTask; 
+const ActionTaskCard: React.FC<{
+    task: ActionTask;
     onMarkComplete: () => void;
 }> = ({ task, onMarkComplete }) => {
     const getStatusPill = (status: ActionTask['status']) => {
@@ -68,21 +68,21 @@ const ComposerView: React.FC<ComposerViewProps> = ({ analysis, opportunities }) 
     const [error, setError] = useState<string | null>(null);
     const [plan, setPlan] = useState<ComposedActionPlan | null>(null);
     const [heartbeat, setHeartbeat] = useState(0);
-    
+
     const handleMarkComplete = useCallback((taskId: number) => {
         if (!plan) return;
-        
+
         const taskToComplete = plan.action_plan.find(t => t.id === taskId);
         if (!taskToComplete || taskToComplete.status === 'done') return;
-        
+
         const now = new Date().toLocaleTimeString();
         const logEntry = `[${now}] Task #${taskId} completed: ${taskToComplete.title}`;
-        
+
         setPlan(prev => {
             if (!prev) return prev;
             return {
                 ...prev,
-                action_plan: prev.action_plan.map(task => 
+                action_plan: prev.action_plan.map(task =>
                     task.id === taskId ? { ...task, status: 'done' as ActionStatus } : task
                 ),
                 execution_log: [...prev.execution_log, logEntry]
@@ -115,7 +115,7 @@ const ComposerView: React.FC<ComposerViewProps> = ({ analysis, opportunities }) 
 
         const liveDataItems: LiveData[] = [];
         const priority: Priority = 'high';
-        
+
         try {
             const result = await composeActionPlan(analysis, opportunities, liveDataItems, analysis.founder_profile, priority);
             setPlan(result);
@@ -130,7 +130,7 @@ const ComposerView: React.FC<ComposerViewProps> = ({ analysis, opportunities }) 
         return (
             <div className="text-center py-12">
                 <h2 className="text-2xl font-bold text-black dark:text-gray-300">Composer is Ready</h2>
-                <p className="mt-2 text-gray-600 dark:text-gray-500">Please run an analysis first. <br/>The Composer uses analysis results to generate an executable action plan. <br/><span className="text-sm text-gray-500 dark:text-gray-600 mt-2 block">Optionally, run a discovery scan for enhanced insights.</span></p>
+                <p className="mt-2 text-gray-600 dark:text-gray-500">Please run an analysis first. <br />The Composer uses analysis results to generate an executable action plan. <br /><span className="text-sm text-gray-500 dark:text-gray-600 mt-2 block">Optionally, run a discovery scan for enhanced insights.</span></p>
             </div>
         );
     }
@@ -142,21 +142,21 @@ const ComposerView: React.FC<ComposerViewProps> = ({ analysis, opportunities }) 
                 Fuse analysis {opportunities.length > 0 ? 'and opportunities' : ''} into an executable action plan with one click.
                 {opportunities.length === 0 && <span className="block text-sm text-gray-500 dark:text-gray-500 mt-1">(Discovery data not available - using analysis only)</span>}
             </p>
-            
+
             <div className="mt-10 max-w-4xl mx-auto space-y-6">
                 {!plan && (
                     <div className="text-center p-8 bg-gray-50 dark:bg-[#1a1a1a]/80 border border-gray-200 dark:border-white/10 rounded-xl">
                         <h3 className="text-xl font-bold text-black dark:text-gray-200">Ready to Synthesize</h3>
                         <p className="mt-2 text-gray-600 dark:text-gray-400">
-                            Your analysis is ready. {opportunities.length > 0 ? 'Discovery insights are also available.' : 'No discovery data available - will use analysis only.'} 
-                            <br/>Click the button below to generate a composed action plan.
+                            Your analysis is ready. {opportunities.length > 0 ? 'Discovery insights are also available.' : 'No discovery data available - will use analysis only.'}
+                            <br />Click the button below to generate a composed action plan.
                         </p>
                         <button
                             onClick={handleSubmit}
                             className="mt-6 bg-gradient-to-r from-[var(--gradient-start)] to-[var(--gradient-end)] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center text-lg gemini-glow-button mx-auto"
                             disabled={isLoading}
                         >
-                            {isLoading ? <><Loader /><span className="ml-2">Thinking...</span></> : <><ZapIcon className="w-5 h-5 mr-2"/>Compose Action Plan</>}
+                            {isLoading ? <><Loader /><span className="ml-2">Thinking...</span></> : <><ZapIcon className="w-5 h-5 mr-2" />Compose Action Plan</>}
                         </button>
                     </div>
                 )}
@@ -168,11 +168,11 @@ const ComposerView: React.FC<ComposerViewProps> = ({ analysis, opportunities }) 
                 <div className="mt-12 max-w-5xl mx-auto animate-slide-up space-y-8">
                     <div className="bg-gray-50 dark:bg-[#1a1a1a]/80 border border-gray-200 dark:border-white/10 p-6 rounded-xl">
                         <div className="flex justify-between items-center">
-                             <h3 className="text-xl font-semibold text-black dark:text-white">Composed Action Plan</h3>
-                             <div className="text-right">
+                            <h3 className="text-xl font-semibold text-black dark:text-white">Composed Action Plan</h3>
+                            <div className="text-right">
                                 <p className="text-sm text-gray-500">Re Trend </p>
                                 <p className="text-2xl font-mono font-bold text-black dark:text-gray-200">{String(Math.floor(heartbeat / 60)).padStart(2, '0')}:{String(heartbeat % 60).padStart(2, '0')}</p>
-                             </div>
+                            </div>
                         </div>
                         <p className="mt-2 text-gray-800 dark:text-gray-300">{plan.fusion_summary}</p>
                     </div>
@@ -189,15 +189,38 @@ const ComposerView: React.FC<ComposerViewProps> = ({ analysis, opportunities }) 
                                 </div>
                             ))}
                         </div>
+                        {plan.key_considerations?.governmental?.length > 0 && (
+                            <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50 p-4 rounded-lg">
+                                <h5 className="font-semibold text-blue-800 dark:text-blue-300">Governmental Support & Schemes</h5>
+                                <ul className="mt-2 list-disc list-inside text-sm space-y-1 text-blue-700 dark:text-blue-400">
+                                    {plan.key_considerations.governmental.map((item, i) => <li key={`gov-support-${i}`}>{item}</li>)}
+                                </ul>
+                            </div>
+                        )}
+                        {plan.key_considerations && (plan.key_considerations.financial.length > 0 || plan.key_considerations.governmental.length > 0) && (
+                            <div className="mt-6">
+                                <h4 className="text-lg font-semibold mb-3 text-black dark:text-gray-200">Key Considerations</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {plan.key_considerations.financial.length > 0 && (
+                                        <div className="bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 p-4 rounded-lg">
+                                            <h5 className="font-semibold text-gray-800 dark:text-gray-300">Financial Factors</h5>
+                                            <ul className="mt-2 list-disc list-inside text-sm space-y-1 text-gray-700 dark:text-gray-400">
+                                                {plan.key_considerations.financial.map((item, i) => <li key={`fin-${i}`}>{item}</li>)}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
-                    
+
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div>
                             <h4 className="text-lg font-semibold mb-3 text-black dark:text-gray-200">Action Plan</h4>
                             <div className="space-y-3">
                                 {plan.action_plan.map(task => (
-                                    <ActionTaskCard 
-                                        key={task.id} 
+                                    <ActionTaskCard
+                                        key={task.id}
                                         task={task}
                                         onMarkComplete={() => handleMarkComplete(task.id)}
                                     />

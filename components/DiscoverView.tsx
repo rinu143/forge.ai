@@ -13,46 +13,46 @@ interface DiscoverViewProps {
 }
 
 const OpportunityCard: React.FC<{ problem: Problem; onClick: () => void }> = ({ problem, onClick }) => {
-    const timeAgo = (dateString: string) => {
-        try {
-            const date = new Date(dateString);
-            const now = new Date();
-            const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-            
-            if (seconds < 60) return "just now";
-            const minutes = Math.floor(seconds / 60);
-            if (minutes < 60) return `${minutes}m ago`;
-            const hours = Math.floor(minutes / 60);
-            if (hours < 24) return `${hours}h ago`;
-            const days = Math.floor(hours / 24);
-            return `${days}d ago`;
-        } catch (e) {
-            return "a moment ago";
-        }
-    };
+  const timeAgo = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    return (
-        <div 
-            onClick={onClick}
-            className="bg-gray-50 dark:bg-[#1a1a1a]/80 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-xl p-6 transition-all duration-300 hover:border-gray-400 dark:hover:border-gray-500/50 hover:-translate-y-1 cursor-pointer hover:shadow-lg dark:hover:shadow-gray-900/50"
-        >
-            <div className="text-lg font-medium">
-              <MarkdownRenderer content={problem.problem_statement} />
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/10">
-                <div className="text-sm flex items-start">
-                    <SparklesIcon className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0 text-gray-700 dark:text-gray-300" />
-                    <div className="italic flex-1">
-                      <MarkdownRenderer content={problem.personalization_note} />
-                    </div>
-                </div>
-            </div>
-            <div className="mt-4 flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
-                <span className="bg-gray-200/10 dark:bg-gray-700/50 px-2 py-1 rounded-md text-xs">{problem.simulated_source}</span>
-                <span>{timeAgo(problem.freshness_timestamp)}</span>
-            </div>
+      if (seconds < 60) return "just now";
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes}m ago`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      return `${days}d ago`;
+    } catch (e) {
+      return "a moment ago";
+    }
+  };
+
+  return (
+    <div
+      onClick={onClick}
+      className="bg-gray-50 dark:bg-[#1a1a1a]/80 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-xl p-6 transition-all duration-300 hover:border-gray-400 dark:hover:border-gray-500/50 hover:-translate-y-1 cursor-pointer hover:shadow-lg dark:hover:shadow-gray-900/50"
+    >
+      <div className="text-lg font-medium">
+        <MarkdownRenderer content={problem.problem_statement} />
+      </div>
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/10">
+        <div className="text-sm flex items-start">
+          <SparklesIcon className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0 text-gray-700 dark:text-gray-300" />
+          <div className="italic flex-1">
+            <MarkdownRenderer content={problem.personalization_note} />
+          </div>
         </div>
-    );
+      </div>
+      <div className="mt-4 flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+        <span className="bg-gray-200/10 dark:bg-gray-700/50 px-2 py-1 rounded-md text-xs">{problem.simulated_source}</span>
+        <span>{timeAgo(problem.freshness_timestamp)}</span>
+      </div>
+    </div>
+  );
 };
 
 
@@ -60,8 +60,8 @@ const DiscoverView: React.FC<DiscoverViewProps> = ({ setResponse, onProblemSelec
   const [userInput, setUserInput] = useState('');
   const [founderProfile, setFounderProfile] = useState<FounderProfile>({
     experience_years: 0,
-    team_size: 0,
-    runway_months: 0,
+    team_size: 1,
+    runway_months: 1,
     tech_stack: [],
     location: '',
     funding_stage: 'pre-seed'
@@ -83,7 +83,7 @@ const DiscoverView: React.FC<DiscoverViewProps> = ({ setResponse, onProblemSelec
       const result = await discoverOpportunities(userInput, founderProfile);
       setCurrentResponse(result);
       setResponse(result);
-    // Fix: Corrected syntax for try-catch block.
+      // Fix: Corrected syntax for try-catch block.
     } catch (err: any) {
       setError(err.message || 'An unknown error occurred.');
     } finally {
@@ -95,7 +95,7 @@ const DiscoverView: React.FC<DiscoverViewProps> = ({ setResponse, onProblemSelec
     <div className="animate-fade-in">
       <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-black dark:text-white px-4">Opportunity Scanner</h2>
       <p className="text-center text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-2 max-w-2xl mx-auto px-4">Discover emerging problems and opportunities tailored to your founder profile.</p>
-      
+
       <div className="mt-6 sm:mt-8 lg:mt-10 max-w-4xl mx-auto">
         <FounderProfileForm profile={founderProfile} setProfile={setFounderProfile} disabled={isLoading} />
       </div>
@@ -118,7 +118,7 @@ const DiscoverView: React.FC<DiscoverViewProps> = ({ setResponse, onProblemSelec
           className="mt-6 w-full bg-gradient-to-r from-[var(--gradient-start)] to-[var(--gradient-end)] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center text-lg gemini-glow-button"
           disabled={isLoading || !userInput.trim()}
         >
-          {isLoading ? <Loader /> : <><SparklesIcon className="w-5 h-5 mr-2"/>Scan for Personalized Opportunities</>}
+          {isLoading ? <Loader /> : <><SparklesIcon className="w-5 h-5 mr-2" />Scan for Personalized Opportunities</>}
         </button>
       </form>
 
@@ -126,18 +126,18 @@ const DiscoverView: React.FC<DiscoverViewProps> = ({ setResponse, onProblemSelec
 
       {currentResponse && (
         <div className="mt-12 max-w-3xl mx-auto animate-slide-up">
-            <h3 className="text-2xl font-bold text-center mb-6 text-black dark:text-gray-200">
-                Top 5 Opportunities in <span>{currentResponse.sector}</span>
-            </h3>
-            <div className="space-y-4">
-                {currentResponse.problems.map((problem) => (
-                    <OpportunityCard 
-                        key={problem.id} 
-                        problem={problem}
-                        onClick={() => onProblemSelect(problem.problem_statement)}
-                    />
-                ))}
-            </div>
+          <h3 className="text-2xl font-bold text-center mb-6 text-black dark:text-gray-200">
+            Top 5 Opportunities in <span>{currentResponse.sector}</span>
+          </h3>
+          <div className="space-y-4">
+            {currentResponse.problems.map((problem) => (
+              <OpportunityCard
+                key={problem.id}
+                problem={problem}
+                onClick={() => onProblemSelect(problem.problem_statement)}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
