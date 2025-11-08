@@ -60,13 +60,13 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (viewMode) {
       case 'analyze':
-        return <AnalyzeView theme={theme} />;
+        return <AnalyzeView setResponse={setAnalysisResponse} initialProblem={selectedProblem} onProblemProcessed={() => setSelectedProblem(null)} profile={founderProfile} setProfile={setFounderProfile} theme={theme} />;
       case 'discover':
         return <DiscoverView setResponse={setDiscoveryResponse} onProblemSelect={handleProblemSelect} profile={founderProfile} setProfile={setFounderProfile} />;
       case 'compose':
         return <ComposerView analysis={analysisResponse} opportunities={discoveryResponse?.problems || []} />;
       default:
-        return <AnalyzeView theme={theme} />;
+        return <AnalyzeView setResponse={setAnalysisResponse} initialProblem={null} profile={founderProfile} setProfile={setFounderProfile} theme={theme} />;
     }
   };
 

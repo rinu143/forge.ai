@@ -14,9 +14,10 @@ Forge AI is a personalized AI co-pilot for startup founders and innovators. It u
 
 ### Key Features
 1. **Authentication**: User registration and login with secure session management
-2. **Analyze**: Integrated chat and analysis view with:
-   - Conversational AI interface with full conversation memory
-   - History tab to browse and switch between past conversations
+2. **Analyze**: Integrated analysis and chat view with three tabs:
+   - Analyze tab: Structured problem analysis with founder profile customization
+   - Chat tab: Conversational AI interface with full conversation memory
+   - History tab: Browse and switch between past conversations
    - AI remembers entire conversation context like ChatGPT
    - Persistent conversations stored in PostgreSQL database
 3. **Discover**: Proactive opportunity scanner that finds emerging problems in specified sectors
@@ -80,8 +81,9 @@ Backend API runs on port 3001, frontend on port 5000.
   - Fixed Vite proxy configuration to forward /api requests to backend (port 3001)
 - Integrated chat into Analyze view:
   - Removed separate Chat view from navigation
-  - Added tabbed interface to AnalyzeView (Analyze tab and History tab)
-  - Analyze tab: Full conversational AI interface with ChatGPT-like memory
+  - Added three-tab interface to AnalyzeView (Analyze, Chat, History tabs)
+  - Analyze tab: Structured problem analysis with founder profile (preserves Discover→Analyze→Compose workflow)
+  - Chat tab: Conversational AI interface with ChatGPT-like memory
   - History tab: Browse all past conversations and switch between them
   - Set Analyze as default view on login
   - Conversations persist in PostgreSQL with full message history
