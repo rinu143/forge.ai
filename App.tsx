@@ -16,6 +16,8 @@ const App: React.FC = () => {
     location: '',
     funding_stage: 'pre-seed'
   });
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const updateTheme = () => setTheme(mq.matches ? 'dark' : 'light');
   const [analysisResponse, setAnalysisResponse] = useState<UserDrivenResponse | null>(null);
   const [discoveryResponse, setDiscoveryResponse] = useState<ProactiveDiscoveryResponse | null>(null);
   const [selectedProblem, setSelectedProblem] = useState<string | null>(null);
@@ -25,6 +27,7 @@ const App: React.FC = () => {
     console.log('Analysis Response:', analysisResponse ? 'Available' : 'None');
     console.log('Discovery Response:', discoveryResponse ? 'Available' : 'None');
     console.log('Composer Enabled:', !!analysisResponse);
+    updateTheme();
   }, [analysisResponse, discoveryResponse]);
 
   useEffect(() => {
