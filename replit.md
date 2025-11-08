@@ -88,6 +88,14 @@ Backend API runs on port 3001, frontend on port 5000.
   - Set Analyze as default view on login
   - Conversations persist in PostgreSQL with full message history
   - Features: New chat, clear conversation, switch conversations from history
+- Implemented contextual chat after analysis:
+  - After analysis completes, conversation is automatically seeded with analysis results
+  - User's problem is added as the first message in the conversation
+  - Analysis results (all chunks and key insights) are formatted and added as assistant's response
+  - Chat tab is automatically activated after analysis, ready for user to continue conversation
+  - User can chat about the analysis with full context preserved
+  - Conversation history includes both analysis and subsequent chat messages
+  - Works for both auto-analysis (from Discover) and manual analysis (from Analyze tab)
 
 ## Running the Project
 The project runs automatically via the configured workflow using `npm run dev`. The application is accessible through the Replit webview on port 5000.
