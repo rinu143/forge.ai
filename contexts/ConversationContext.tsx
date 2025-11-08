@@ -76,21 +76,25 @@ export const ConversationProvider: React.FC<ConversationProviderProps> = ({ chil
       console.error('[ConversationContext] No target conversation found');
       return;
     }
-
     try {
       console.log('[ConversationContext] Adding message to conversation:', targetConversation.id);
       const newMessage = await conversationAPI.addMessage(targetConversation.id, role, content);
       console.log('[ConversationContext] Message added to database:', newMessage.id);
 
-      const updatedTitle = targetConversation.messages.length === 0 && role === 'user' 
-        ? content.slice(0, 50) + (content.length > 50 ? '...' : '')
-        : targetConversation.title;
+      // Use callback-based state updates to ensure we work with latest state
+      setConversations(prev => {
+        // Find the target conversation in the current state
+        let targetConv = conversationId 
+          ? prev.find(c => c.id === conversationId)
+          : prev.find(c => c.id === currentConversation?.id);
+        
+        if (!targetConv) {
+          return prev;
+        }
 
-      const updatedConversation = {
-        ...targetConversation,
-        messages: [...targetConversation.messages, newMessage],
-        title: updatedTitle,
-      };
+        const updatedTitle = targetConv.messages.length === 0 && role === 'user' 
+          ? content.slice(0, 50) + (content.length > 50 ? '...' : '')
+          : targetConv.title;
 
       setCurrentConversation(updatedConversation);
       setConversations(prev =>
